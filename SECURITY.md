@@ -16,7 +16,7 @@ receives security fixes.
 
 1. Use GitHub's [private vulnerability reporting](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability)
    for this repository.
-2. Or email: `security@<your-domain>` (replace before publishing).
+2. Or email: `deuriib@gmail.com` (replace before publishing).
 
 Please include:
 

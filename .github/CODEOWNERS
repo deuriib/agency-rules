@@ -1,12 +1,12 @@
 # Default owners — override per path below.
-*                       @<your-org>/agency-rules-maintainers
+*                       @deuriib/agency-rules-maintainers
 
 # Engine and contract changes need extra scrutiny.
-/tools.json             @<your-org>/agency-rules-maintainers
-/scripts/convert.mjs    @<your-org>/agency-rules-maintainers
-/scripts/install.mjs    @<your-org>/agency-rules-maintainers
-/scripts/lib/renderers/ @<your-org>/agency-rules-maintainers
+/tools.json             @deuriib/agency-rules-maintainers
+/scripts/convert.mjs    @deuriib/agency-rules-maintainers
+/scripts/install.mjs    @deuriib/agency-rules-maintainers
+/scripts/lib/renderers/ @deuriib/agency-rules-maintainers
 
 # Docs changes are lighter-weight.
-/docs/                  @<your-org>/agency-rules-docs
-README.md               @<your-org>/agency-rules-docs
+/docs/                  @deuriib/agency-rules-docs
+README.md               @deuriib/agency-rules-docs
