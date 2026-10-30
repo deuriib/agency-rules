@@ -48,6 +48,11 @@ for (const id of harnessIds) {
         process.exit(1);
     }
 
+    if (!harness.integrationPath) {
+        console.error(`❌ Missing "integrationPath" for harness "${id}" in tools.json`);
+        process.exit(1);
+    }
+
     const harnessDir = join(INTEGRATIONS_DIR, id);
     const manifest = [];
 

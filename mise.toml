@@ -62,5 +62,9 @@ run = "node --test tests/"
 description = "Full pipeline: validate → check → convert → test"
 depends = ["validate", "check", "convert", "test"]
 
+[tasks.release]
+description = "Trigger the release workflow on GitHub (requires gh CLI)"
+run = "gh workflow run release.yml"
+
 [hooks]
 postinstall = "npm ci"

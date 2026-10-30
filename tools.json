@@ -1,5 +1,4 @@
 {
-  "$schema": "./tools.schema.json",
   "version": 1,
   "harnesses": {
     "antigravity": {
@@ -7,24 +6,14 @@
       "label": "Google Antigravity",
       "format": "md-yaml-trigger",
       "installKind": "per-rule",
-      "detect": {
-        "dirs": [
-          ".agents",
-          ".agent"
-        ],
-        "files": [
-          "GEMINI.md",
-          "AGENTS.md"
-        ]
-      },
+      "integrationPath": "{{slug}}.md",
+      "detect": { "dirs": [".agents", "~/.gemini"], "files": ["GEMINI.md", "AGENTS.md"] },
       "dest": {
         "project": ".agents/rules/{{slug}}.md",
-        "user": "~/.gemini/rules/{{slug}}.md"
+        "user": "~/.gemini/config/rules/{{slug}}.md"
       },
       "frontmatter": {
-        "required": [
-          "trigger"
-        ],
+        "required": ["trigger"],
         "map": {
           "trigger": "always_on|glob|model_decision|manual",
           "globs": "string",
@@ -37,25 +26,18 @@
       "label": "Pi Coding Agent",
       "format": "md-rules-dir",
       "installKind": "per-rule",
-      "detect": {
-        "dirs": [
-          ".pi/rules",
-          "~/.pi/agent/rules"
-        ]
-      },
+      "integrationPath": "{{slug}}/RULES.md",
+      "detect": { "dirs": [".pi", "~/.pi"] },
       "dest": {
         "project": ".pi/rules/{{slug}}/RULES.md",
         "user": "~/.pi/agent/rules/{{slug}}/RULES.md"
       },
       "frontmatter": {
-        "required": [
-          "name",
-          "description"
-        ],
+        "required": ["name", "description"],
         "map": {
-          "name": "string (max 64, lowercase-hyphen)",
-          "description": "string (max 1024)",
-          "tools": "array<string> (optional)"
+          "name": "string",
+          "description": "string",
+          "tools": "array<string>"
         }
       }
     },
@@ -64,67 +46,46 @@
       "label": "oh-my-pi (omp)",
       "format": "md-or-mdc",
       "installKind": "per-rule",
-      "detect": {
-        "dirs": [
-          ".omp/rules",
-          "~/.omp/agent/rules"
-        ]
-      },
+      "integrationPath": "{{slug}}.md",
+      "detect": { "dirs": [".omp", "~/.omp"] },
       "dest": {
         "project": ".omp/rules/{{slug}}.md",
         "user": "~/.omp/agent/rules/{{slug}}.md"
       },
       "frontmatter": {
-        "required": [
-          "name",
-          "description"
-        ],
+        "required": ["name", "description"],
         "map": {
           "name": "string",
           "description": "string",
-          "globs": "array<string>|string (optional)",
-          "alwaysApply": "boolean (optional)"
+          "globs": "array<string>|string",
+          "alwaysApply": "boolean"
         }
       },
-      "extensions": [
-        ".md",
-        ".mdc"
-      ]
+      "extensions": [".md", ".mdc"]
     },
     "opencode": {
       "id": "opencode",
       "label": "OpenCode (via opencode-rules)",
       "format": "md-plugin",
       "installKind": "per-rule",
-      "detect": {
-        "dirs": [
-          ".opencode/rules",
-          "~/.config/opencode/rules"
-        ]
-      },
+      "integrationPath": "{{slug}}.md",
+      "detect": { "dirs": [".opencode", "~/.config/opencode"] },
       "dest": {
         "project": ".opencode/rules/{{slug}}.md",
         "user": "~/.config/opencode/rules/{{slug}}.md"
       },
       "frontmatter": {
-        "required": [
-          "description"
-        ],
+        "required": ["description"],
         "map": {
-          "description": "string (usada como criterio de matching)",
-          "globs": "array<string>|string (optional)",
-          "match": "\"any\"|\"all\" (optional)"
+          "description": "string",
+          "globs": "array<string>|string",
+          "match": "\"any\"|\"all\""
         }
       },
       "plugin": {
         "package": "opencode-rules",
-        "configKey": "plugin",
         "entry": "opencode-rules@latest"
-      },
-      "extensions": [
-        ".md",
-        ".mdc"
-      ]
+      }
     }
   }
 }
