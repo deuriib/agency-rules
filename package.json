@@ -1,0 +1,14 @@
+{
+  "name": "agency-rules",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Write rules once. Run them in every harness.",
+  "license": "MIT",
+  "engines": { "node": ">=20.12" },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "gray-matter": "^4.0.3",
+    "yaml": "^2.5.0"
+  }
+}

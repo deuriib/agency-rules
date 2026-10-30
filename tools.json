@@ -1,0 +1,130 @@
+{
+  "$schema": "./tools.schema.json",
+  "version": 1,
+  "harnesses": {
+    "antigravity": {
+      "id": "antigravity",
+      "label": "Google Antigravity",
+      "format": "md-yaml-trigger",
+      "installKind": "per-rule",
+      "detect": {
+        "dirs": [
+          ".agents",
+          ".agent"
+        ],
+        "files": [
+          "GEMINI.md",
+          "AGENTS.md"
+        ]
+      },
+      "dest": {
+        "project": ".agents/rules/{{slug}}.md",
+        "user": "~/.gemini/rules/{{slug}}.md"
+      },
+      "frontmatter": {
+        "required": [
+          "trigger"
+        ],
+        "map": {
+          "trigger": "always_on|glob|model_decision|manual",
+          "globs": "string",
+          "description": "string"
+        }
+      }
+    },
+    "pi-agent": {
+      "id": "pi-agent",
+      "label": "Pi Coding Agent",
+      "format": "md-rules-dir",
+      "installKind": "per-rule",
+      "detect": {
+        "dirs": [
+          ".pi/rules",
+          "~/.pi/agent/rules"
+        ]
+      },
+      "dest": {
+        "project": ".pi/rules/{{slug}}/RULES.md",
+        "user": "~/.pi/agent/rules/{{slug}}/RULES.md"
+      },
+      "frontmatter": {
+        "required": [
+          "name",
+          "description"
+        ],
+        "map": {
+          "name": "string (max 64, lowercase-hyphen)",
+          "description": "string (max 1024)",
+          "tools": "array<string> (optional)"
+        }
+      }
+    },
+    "oh-my-pi": {
+      "id": "oh-my-pi",
+      "label": "oh-my-pi (omp)",
+      "format": "md-or-mdc",
+      "installKind": "per-rule",
+      "detect": {
+        "dirs": [
+          ".omp/rules",
+          "~/.omp/agent/rules"
+        ]
+      },
+      "dest": {
+        "project": ".omp/rules/{{slug}}.md",
+        "user": "~/.omp/agent/rules/{{slug}}.md"
+      },
+      "frontmatter": {
+        "required": [
+          "name",
+          "description"
+        ],
+        "map": {
+          "name": "string",
+          "description": "string",
+          "globs": "array<string>|string (optional)",
+          "alwaysApply": "boolean (optional)"
+        }
+      },
+      "extensions": [
+        ".md",
+        ".mdc"
+      ]
+    },
+    "opencode": {
+      "id": "opencode",
+      "label": "OpenCode (via opencode-rules)",
+      "format": "md-plugin",
+      "installKind": "per-rule",
+      "detect": {
+        "dirs": [
+          ".opencode/rules",
+          "~/.config/opencode/rules"
+        ]
+      },
+      "dest": {
+        "project": ".opencode/rules/{{slug}}.md",
+        "user": "~/.config/opencode/rules/{{slug}}.md"
+      },
+      "frontmatter": {
+        "required": [
+          "description"
+        ],
+        "map": {
+          "description": "string (usada como criterio de matching)",
+          "globs": "array<string>|string (optional)",
+          "match": "\"any\"|\"all\" (optional)"
+        }
+      },
+      "plugin": {
+        "package": "opencode-rules",
+        "configKey": "plugin",
+        "entry": "opencode-rules@latest"
+      },
+      "extensions": [
+        ".md",
+        ".mdc"
+      ]
+    }
+  }
+}

@@ -1,0 +1,30 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v5
+        with:
+          cache: true
+
+      - name: Setup Biome
+        uses: biomejs/setup-biome@v2
+
+      - name: Validate rules
+        run: mise run validate
+
+      - name: Check formatting and linting
+        run: biome ci
+
+      - name: Convert rules
+        run: mise run convert
+
+      - name: Run tests
+        run: mise run test

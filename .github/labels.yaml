@@ -1,0 +1,108 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kjanat/github-labelmanager/master/.github/labels.schema.json
+labels:
+  # ── Type ─────────────────────────────────────────────────────────────
+  - name: "bug"
+    color: "#d73a4a"
+    description: "Something isn't working as expected"
+    aliases: ["defect"]
+
+  - name: "feature"
+    color: "#a2eeef"
+    description: "New capability or enhancement"
+    aliases: ["enhancement", "improvement"]
+
+  - name: "rule"
+    color: "#1d76db"
+    description: "New rule or change to an existing rule"
+    aliases: ["new-rule", "rule-change"]
+
+  - name: "harness"
+    color: "#5319e7"
+    description: "Support for a new coding agent harness"
+    aliases: ["integration", "tool-support"]
+
+  - name: "docs"
+    color: "#0075ca"
+    description: "Documentation only"
+    aliases: ["documentation"]
+
+  - name: "test"
+    color: "#f9d0c4"
+    description: "Test-only changes"
+
+  - name: "chore"
+    color: "#fef2c0"
+    description: "Tooling, dependencies, CI, formatting"
+
+  # ── Priority ─────────────────────────────────────────────────────────
+  - name: "priority: critical"
+    color: "#b60205"
+    description: "Blocks a release or breaks core functionality"
+
+  - name: "priority: high"
+    color: "#d93f0b"
+    description: "Should be addressed in the next cycle"
+
+  - name: "priority: medium"
+    color: "#fbca04"
+    description: "Important but not urgent"
+
+  - name: "priority: low"
+    color: "#0e8a16"
+    description: "Nice to have, can wait"
+
+  # ── State ────────────────────────────────────────────────────────────
+  - name: "triage"
+    color: "#ededed"
+    description: "Needs initial review and categorization"
+
+  - name: "blocked"
+    color: "#e11d21"
+    description: "Cannot proceed until a dependency is resolved"
+
+  - name: "needs-info"
+    color: "#d4c5f9"
+    description: "Waiting for more information from the reporter"
+
+  - name: "good first issue"
+    color: "#7057ff"
+    description: "Good entry point for new contributors"
+    aliases: ["beginner-friendly"]
+
+  - name: "help wanted"
+    color: "#008672"
+    description: "Community contributions are welcome"
+
+  # ── Technical domain ─────────────────────────────────────────────────
+  - name: "antigravity"
+    color: "#4285f4"
+    description: "Google Antigravity harness"
+
+  - name: "pi-agent"
+    color: "#ff6f00"
+    description: "Pi Coding Agent harness"
+
+  - name: "oh-my-pi"
+    color: "#8b5cf6"
+    description: "oh-my-pi (omp) harness"
+
+  - name: "opencode"
+    color: "#10b981"
+    description: "OpenCode harness (opencode-rules plugin)"
+
+  # ── Meta ─────────────────────────────────────────────────────────────
+  - name: "dependencies"
+    color: "#0366d6"
+    description: "Pull requests that update a dependency"
+
+  - name: "duplicate"
+    color: "#cfd3d7"
+    description: "This issue or PR already exists"
+
+  - name: "invalid"
+    color: "#e4e669"
+    description: "This doesn't seem right"
+
+  - name: "wontfix"
+    color: "#ffffff"
+    description: "This will not be worked on"

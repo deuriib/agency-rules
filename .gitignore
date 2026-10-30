@@ -147,3 +147,10 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# mise
+.mise/
+mise.local.toml
+
+integrations/*.md
+integrations/*/

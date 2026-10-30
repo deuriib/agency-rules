@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/<your-org>/agency-rules/tree/main/docs
+    about: Read the architecture, rule spec, or harness extension guide.
+  - name: Security issue
+    url: https://github.com/<your-org>/agency-rules/security/policy
+    about: Report a vulnerability privately.

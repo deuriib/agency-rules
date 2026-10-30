@@ -1,0 +1,66 @@
+[tools]
+node = "22"
+"npm:@biomejs/biome" = "2.5.0" # Pinned for reproducibility
+
+[env]
+NODE_ENV = "development"
+RULES_DIR = "{{config_root}}/rules"
+INTEGRATIONS_DIR = "{{config_root}}/integrations"
+_.path = ["./node_modules/.bin"]
+
+# ── Setup ─────────────────────────────────────────────────────────────
+[tasks.setup]
+description = "Install Node dependencies"
+run = "npm install"
+
+# ── Format & lint (Biome) ─────────────────────────────────────────────
+[tasks.fmt]
+description = "Format the entire codebase with Biome"
+run = "biome format --write ."
+
+[tasks.lint]
+description = "Run Biome's linter (no file modifications)"
+run = "biome lint ."
+
+[tasks.check]
+description = "Format, lint, and organize imports (write mode)"
+run = "biome check --write ."
+
+# ── Validation ────────────────────────────────────────────────────────
+[tasks.validate]
+description = "Validate each rule's frontmatter against the schema"
+run = "node scripts/validate.mjs"
+
+# ── Conversion ────────────────────────────────────────────────────────
+[tasks.convert]
+description = "Compile rules/ into each harness's native format"
+run = "node scripts/convert.mjs"
+sources = ["rules/**/*.md", "tools.json", "scripts/lib/**/*.mjs"]
+outputs = ["integrations/**/*"]
+
+[tasks."convert:dry-run"]
+description = "Preview which files convert would write (no writes)"
+run = "node scripts/convert.mjs --dry-run"
+
+# ── Install ───────────────────────────────────────────────────────────
+[tasks.install]
+description = "Install compiled artifacts into detected harnesses"
+run = "node scripts/install.mjs"
+depends = ["convert"]
+
+[tasks."install:dry-run"]
+description = "Preview which files install would copy (no writes, no convert)"
+run = "node scripts/install.mjs --dry-run"
+
+# ── Tests ─────────────────────────────────────────────────────────────
+[tasks.test]
+description = "Run the conversion test suite"
+run = "node --test tests/"
+
+# ── CI composition ────────────────────────────────────────────────────
+[tasks.ci]
+description = "Full pipeline: validate → check → convert → test"
+depends = ["validate", "check", "convert", "test"]
+
+[hooks]
+postinstall = "npm ci"
