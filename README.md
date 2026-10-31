@@ -29,6 +29,23 @@ with a single command, driven by a declarative contract (`tools.json`).
 
 ---
 
+## Global CLI Usage
+
+You can also use `agency-rules` directly via `npx` without cloning the repository:
+
+```bash
+# Validate rules
+npx agency-rules validate
+
+# Compile rules
+npx agency-rules convert
+
+# Install rules interactively
+npx agency-rules install
+```
+
+---
+
 ## Quick Start
 
 ```bash
