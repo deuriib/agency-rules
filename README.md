@@ -4,7 +4,7 @@
 
 `agency-rules` compiles a single set of generic Markdown rules into the
 native formats expected by **Google Antigravity**, **pi-agent**,
-**oh-my-pi (omp)**, and **OpenCode** (via the `opencode-rules` plugin).
+**oh-my-pi (omp)**, and **OpenCode** (via the [opencode-rules]("https://github.com/frap129/opencode-rules") plugin).
 
 The whole pipeline — toolchain, environment, and tasks — is managed by
 [mise](https://mise.jdx.dev), so every collaborator and CI runner uses the
@@ -21,7 +21,7 @@ Every coding agent has its own rule format:
 | Google Antigravity | YAML frontmatter with `trigger` | `.agents/rules/*.md` |
 | pi-agent | Per-rule directory with `RULES.md` | `.pi/rules/<slug>/RULES.md` |
 | oh-my-pi (omp) | Markdown with frontmatter | `.omp/rules/*.{md,mdc}` |
-| OpenCode | Markdown via `opencode-rules` plugin | `.opencode/rules/*.md` |
+| OpenCode | Markdown via [opencode-rules]("https://github.com/frap129/opencode-rules") plugin | `.opencode/rules/*.md` |
 
 Writing the same rule four times is a maintenance nightmare. `agency-rules`
 lets you write it **once** in a neutral format and compile it to all four
