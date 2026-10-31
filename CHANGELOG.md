@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0](https://github.com/deuriib/agency-rules/compare/v0.5.0...v0.6.0) (2026-10-31)
+
+
+### Features
+
+* **rules:** add Agentmemory MCP guidelines ([0d68b32](https://github.com/deuriib/agency-rules/commit/0d68b32e91b5385087b34d9dc93b45576bf88ceb))
+* **rules:** add Agentmemory MCP guidelines ([1c846f5](https://github.com/deuriib/agency-rules/commit/1c846f5715137ea0d98d5365b99e4589a129a92b)), closes [#14](https://github.com/deuriib/agency-rules/issues/14)
+* **rules:** add subagent delegation guidelines ([4527e1f](https://github.com/deuriib/agency-rules/commit/4527e1f7a16fb131a09406083562d59ff9f0eb8b))
+* **rules:** add subagent delegation guidelines ([1042370](https://github.com/deuriib/agency-rules/commit/1042370beb15a15e9f9a57831a754da4ee05edbc)), closes [#15](https://github.com/deuriib/agency-rules/issues/15)
+
+
+### Bug Fixes
+
+* unused variable via biome ([7bd25b1](https://github.com/deuriib/agency-rules/commit/7bd25b1c8c1b28521d6aaee57e1d5179e0cfafab))
+
 ## [0.5.0](https://github.com/deuriib/agency-rules/compare/v0.4.1...v0.5.0) (2026-10-31)
 
 
