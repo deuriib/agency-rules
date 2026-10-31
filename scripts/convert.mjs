@@ -1,5 +1,5 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { readRules } from './lib/frontmatter.mjs';
 import { renderers } from './lib/renderers/index.mjs';
@@ -14,16 +14,24 @@ const { values: args } = parseArgs({
 const dryRun = args['dry-run'];
 const prefix = dryRun ? '  [dry-run]' : ' ';
 
-const RULES_DIR = process.env.RULES_DIR || 'rules';
+// Resolve paths: Use local if exists, otherwise fallback to the package's bundled files
+const PACKAGE_ROOT = resolve(import.meta.dirname, '..');
+const localRules = resolve(process.cwd(), 'rules');
+const localTools = resolve(process.cwd(), 'tools.json');
+
+const RULES_DIR =
+    process.env.RULES_DIR ||
+    ((await import('node:fs').then((fs) => fs.existsSync(localRules)))
+        ? localRules
+        : resolve(PACKAGE_ROOT, 'rules'));
+const TOOLS_PATH = (await import('node:fs').then((fs) => fs.existsSync(localTools)))
+    ? localTools
+    : resolve(PACKAGE_ROOT, 'tools.json');
+
 const INTEGRATIONS_DIR = process.env.INTEGRATIONS_DIR || 'integrations';
 
-const tools = JSON.parse(await readFile('tools.json', 'utf8'));
+const tools = JSON.parse(await readFile(TOOLS_PATH, 'utf8'));
 const rules = await readRules(RULES_DIR);
-
-if (rules.length === 0) {
-    console.error(`❌ No rules found in ${RULES_DIR}`);
-    process.exit(1);
-}
 
 console.log(
     `📚 Found ${rules.length} rule(s) in ${RULES_DIR}${dryRun ? ' (dry-run — nothing will be written)' : ''}\n`,

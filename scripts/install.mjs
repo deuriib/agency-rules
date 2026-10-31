@@ -1,5 +1,6 @@
+import { existsSync } from 'node:fs';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import { parseArgs } from 'node:util';
@@ -19,7 +20,12 @@ const tag = dryRun ? '[dry-run]' : '     ';
 const log = (msg) => console.log(`  ${tag} ${msg}`);
 
 const INTEGRATIONS_DIR = process.env.INTEGRATIONS_DIR || 'integrations';
-const tools = JSON.parse(await readFile('tools.json', 'utf8'));
+
+const PACKAGE_ROOT = resolve(import.meta.dirname, '..');
+const localTools = resolve(process.cwd(), 'tools.json');
+const TOOLS_PATH = existsSync(localTools) ? localTools : resolve(PACKAGE_ROOT, 'tools.json');
+
+const tools = JSON.parse(await readFile(TOOLS_PATH, 'utf8'));
 
 let finalScope = args.scope;
 let finalHarness = args.harness;

@@ -29,9 +29,10 @@
     "node": ">=20.12"
   },
   "files": [
+    "bin/",
     "scripts/",
     "tools.json",
-    "rules/_schema.json",
+    "rules/",
     "docs/",
     "README.md",
     "LICENSE",
