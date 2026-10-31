@@ -57,6 +57,11 @@ run = "node scripts/install.mjs --dry-run"
 description = "Run the conversion test suite"
 run = "node --test 'tests/**/*.test.mjs'"
 
+# ── List ──────────────────────────────────────────────────────────────
+[tasks.list]
+description = "List all available rules"
+run = "node scripts/list.mjs"
+
 # ── CI composition ────────────────────────────────────────────────────
 [tasks.ci]
 description = "Full pipeline: validate → check → convert → test"

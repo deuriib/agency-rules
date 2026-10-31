@@ -29,17 +29,18 @@ Write rules once. Run them in every harness.
   $ agency-rules <command> [options]
 
 \x1b[33mCommands:\x1b[0m
-  \x1b[32mconvert\x1b[0m     Compile rules/ into each harness's native format
-  \x1b[32minstall\x1b[0m     Install compiled artifacts into detected harnesses
-  \x1b[32mvalidate\x1b[0m    Validate each rule's frontmatter against the schema
+  \x1b[32mlist\x1b[0m         List all available rules
+  \x1b[32mconvert\x1b[0m      Compile rules/ into each harness's native format
+  \x1b[32minstall\x1b[0m      Install compiled artifacts into detected harnesses
+  \x1b[32mvalidate\x1b[0m     Validate each rule's frontmatter against the schema
 
 \x1b[33mGlobal Options:\x1b[0m
   -h, --help      Show this help message
   -v, --version   Show version number
 
 \x1b[33mExamples:\x1b[0m
+  $ agency-rules list
   $ agency-rules validate
-  $ agency-rules convert
   $ agency-rules convert --dry-run
   $ agency-rules install --scope user --harness opencode
 `);
@@ -47,6 +48,17 @@ Write rules once. Run them in every harness.
 
 const showCommandHelp = (cmd) => {
     const helps = {
+        list: `
+\x1b[36magency-rules list\x1b[0m
+List all available rules and their descriptions.
+
+\x1b[33mOptions:\x1b[0m
+  --json            Output the list in JSON format (useful for scripting)
+
+\x1b[33mExamples:\x1b[0m
+  $ agency-rules list
+  $ agency-rules list --json | jq '.'
+`,
         convert: `
 \x1b[36magency-rules convert\x1b[0m
 Compile rules/ into each harness's native format.
@@ -101,7 +113,7 @@ if (!command || command === 'help' || command === '--help' || command === '-h') 
     process.exit(0);
 }
 
-if (!['convert', 'install', 'validate'].includes(command)) {
+if (!['list', 'convert', 'install', 'validate'].includes(command)) {
     console.error(`\x1b[31mError:\x1b[0m Unknown command '${command}'`);
     showHelp();
     process.exit(1);
@@ -114,7 +126,6 @@ if (process.argv.includes('--help') || process.argv.includes('-h')) {
 }
 
 // ── Execute ───────────────────────────────────────────────────────────
-// Remove the command from argv so the downstream script's parseArgs works cleanly
 process.argv.splice(2, 1);
 
 const scriptPath = resolve(import.meta.dirname, '..', 'scripts', `${command}.mjs`);
