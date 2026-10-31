@@ -16,7 +16,14 @@ export default defineCommand({
             type: 'string',
             description: 'Install local to project or global to user (default: project)',
         },
-        harness: { type: 'string', description: 'Install into a specific harness' },
+        harness: {
+            type: 'string',
+            description: 'Install into specific harnesses (comma-separated)',
+        },
+        rules: {
+            type: 'string',
+            description: 'Install only specific rules by slug (comma-separated)',
+        },
         all: {
             type: 'boolean',
             description: 'Force installation for all harnesses, ignoring auto-detection',
@@ -42,15 +49,16 @@ export default defineCommand({
         const tools = JSON.parse(await readFile(TOOLS_PATH, 'utf8'));
 
         let finalScope = args.scope;
-        let finalHarness = args.harness;
+        let finalHarnesses = args.harness ? args.harness.split(',').map((s) => s.trim()) : null;
         let forceAll = args.all;
+        const rulesToInstall = args.rules ? args.rules.split(',').map((s) => s.trim()) : null;
 
         // Interactive Mode
-        if (input.isTTY && ((!finalHarness && !forceAll) || !finalScope)) {
+        if (input.isTTY && ((!finalHarnesses && !forceAll) || !finalScope)) {
             const rl = createInterface({ input, output });
 
-            if (!finalHarness && !forceAll) {
-                console.log('\n🎯 Select a harness to install into:');
+            if (!finalHarnesses && !forceAll) {
+                console.log('\n🎯 Select harnesses to install into:');
                 const keys = Object.keys(tools.harnesses);
                 keys.forEach((k, i) => {
                     console.log(`  ${i + 1}) ${k} (${tools.harnesses[k].label})`);
@@ -59,14 +67,19 @@ export default defineCommand({
                 console.log(`  ${keys.length + 2}) All harnesses`);
 
                 const answer = await rl.question(
-                    `\nChoice [1-${keys.length + 2}] (default: detect): `,
+                    `\nChoice [1-${keys.length + 2}] (comma-separated for multiple, default: detect): `,
                 );
-                const num = parseInt(answer.trim(), 10);
+                const answers = answer.split(',').map((s) => s.trim());
+                const nums = answers.map((a) => parseInt(a, 10)).filter((n) => !Number.isNaN(n));
 
-                if (!Number.isNaN(num) && num >= 1 && num <= keys.length) {
-                    finalHarness = keys[num - 1];
-                } else if (num === keys.length + 2 || answer.trim().toLowerCase() === 'all') {
-                    forceAll = true;
+                if (nums.length > 0) {
+                    if (nums.includes(keys.length + 2)) {
+                        forceAll = true;
+                    } else {
+                        finalHarnesses = nums
+                            .filter((n) => n >= 1 && n <= keys.length)
+                            .map((n) => keys[n - 1]);
+                    }
                 }
             }
 
@@ -94,12 +107,14 @@ export default defineCommand({
         }
 
         let targets;
-        if (finalHarness) {
-            if (!tools.harnesses[finalHarness]) {
-                console.error(`❌ Unknown harness: ${finalHarness}`);
-                process.exit(1);
+        if (finalHarnesses) {
+            for (const id of finalHarnesses) {
+                if (!tools.harnesses[id]) {
+                    console.error(`❌ Unknown harness: ${id}`);
+                    process.exit(1);
+                }
             }
-            targets = [finalHarness];
+            targets = finalHarnesses;
         } else if (forceAll) {
             targets = Object.keys(tools.harnesses);
         } else {
@@ -138,7 +153,26 @@ export default defineCommand({
                 continue;
             }
 
-            for (const { slug, path: relPath } of manifest.files) {
+            let filesToCopy = manifest.files;
+            if (rulesToInstall) {
+                filesToCopy = manifest.files.filter((f) => rulesToInstall.includes(f.slug));
+
+                // Warn if requested rules are missing from this specific harness manifest
+                const availableSlugs = manifest.files.map((f) => f.slug);
+                const missing = rulesToInstall.filter((slug) => !availableSlugs.includes(slug));
+                if (missing.length > 0) {
+                    console.warn(
+                        `⚠️  ${id}: The following requested rules were not found in the compiled output: ${missing.join(', ')}`,
+                    );
+                }
+            }
+
+            if (filesToCopy.length === 0) {
+                console.log(`  ${tag} ${id}: no matching rules to install.`);
+                continue;
+            }
+
+            for (const { slug, path: relPath } of filesToCopy) {
                 const destPath = expandHome(destTemplate.replace('{{slug}}', slug));
                 if (dryRun) {
                     log(`${id}: would copy ${relPath} → ${destPath}`);
@@ -150,7 +184,7 @@ export default defineCommand({
                 copied++;
             }
 
-            if (harness.plugin) {
+            if (harness.plugin && (!rulesToInstall || filesToCopy.length > 0)) {
                 const changed = await handlePlugin(id, harness.plugin, finalScope, dryRun, log);
                 if (changed) pluginChanges++;
             }
