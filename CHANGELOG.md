@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0](https://github.com/deuriib/agency-rules/compare/v0.2.0...v0.3.0) (2026-10-31)
+
+
+### Features
+
+* **skills:** add writing-rules skill for rule authoring ([41b99d7](https://github.com/deuriib/agency-rules/commit/41b99d7416fa52463303fc150e237fbc26ba90e1))
+
+
+### Bug Fixes
+
+* **ci:** correct labels config file extension ([51617c6](https://github.com/deuriib/agency-rules/commit/51617c68abcf95b13040b1cfeadcbf52013ff9d4))
+* **ci:** use node 24 for npm trusted publishing ([cf49055](https://github.com/deuriib/agency-rules/commit/cf4905539693f5a1d38ed902abc5a5c7c32d1635))
+
 ## [0.2.0](https://github.com/deuriib/agency-rules/compare/v0.1.0...v0.2.0) (2026-10-31)
 
 
