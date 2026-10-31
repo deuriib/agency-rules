@@ -38,6 +38,10 @@ labels:
     color: "#0052cc"
     description: "Command-line interface, arguments, and output formatting"
 
+  - name: "refactor"
+    color: "#d4c5f9"
+    description: "A code change that neither fixes a bug nor adds a feature"
+
   # ── Priority ─────────────────────────────────────────────────────────
   - name: "priority: critical"
     color: "#b60205"
