@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2](https://github.com/deuriib/agency-rules/compare/v0.3.1...v0.3.2) (2026-10-31)
+
+
+### Bug Fixes
+
+* **ci:** completely remove NODE_AUTH_TOKEN to enforce OIDC ([59b966d](https://github.com/deuriib/agency-rules/commit/59b966dbdf29502b127f5b271de42f9ca56687f9))
+* **ci:** completely remove NODE_AUTH_TOKEN to enforce OIDC ([a8229a7](https://github.com/deuriib/agency-rules/commit/a8229a7fc912f26b34dec9a2735a659ce63d12a9))
+
 ## [0.3.1](https://github.com/deuriib/agency-rules/compare/v0.3.0...v0.3.1) (2026-10-31)
 
 
