@@ -1,21 +1,18 @@
-import { access, copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
+import { stdin as input, stdout as output } from 'node:process';
+import { createInterface } from 'node:readline/promises';
 import { parseArgs } from 'node:util';
 import { detectHarnesses, expandHome, pathExists } from './lib/detect.mjs';
 
 const { values: args } = parseArgs({
     options: {
-        scope: { type: 'string', default: 'project' },
+        scope: { type: 'string' },
         harness: { type: 'string' },
         all: { type: 'boolean', default: false },
         'dry-run': { type: 'boolean', default: false },
     },
 });
-
-if (!['project', 'user'].includes(args.scope)) {
-    console.error(`❌ Invalid --scope: ${args.scope} (use "project" or "user")`);
-    process.exit(1);
-}
 
 const dryRun = args['dry-run'];
 const tag = dryRun ? '[dry-run]' : '     ';
@@ -24,27 +21,73 @@ const log = (msg) => console.log(`  ${tag} ${msg}`);
 const INTEGRATIONS_DIR = process.env.INTEGRATIONS_DIR || 'integrations';
 const tools = JSON.parse(await readFile('tools.json', 'utf8'));
 
+let finalScope = args.scope;
+let finalHarness = args.harness;
+
+// ── Interactive Mode (si no se pasan parámetros y es una terminal) ─────
+if (input.isTTY && ((!finalHarness && !args.all) || !finalScope)) {
+    const rl = createInterface({ input, output });
+
+    if (!finalHarness && !args.all) {
+        console.log('\n🎯 Select a harness to install into:');
+        const keys = Object.keys(tools.harnesses);
+        keys.forEach((k, i) => console.log(`  ${i + 1}) ${k} (${tools.harnesses[k].label})`));
+        console.log(`  ${keys.length + 1}) Detect automatically`);
+        console.log(`  ${keys.length + 2}) All harnesses`);
+
+        const answer = await rl.question(`\nChoice [1-${keys.length + 2}] (default: detect): `);
+        const num = parseInt(answer.trim(), 10);
+
+        if (!isNaN(num) && num >= 1 && num <= keys.length) {
+            finalHarness = keys[num - 1];
+        } else if (num === keys.length + 2 || answer.trim().toLowerCase() === 'all') {
+            args.all = true;
+        }
+    }
+
+    if (!finalScope) {
+        console.log('\n🌍 Select installation scope:');
+        console.log('  1) project (local to this repo)');
+        console.log('  2) user (global for your user)');
+
+        const answer = await rl.question('\nChoice [1-2] (default: 1): ');
+        finalScope =
+            answer.trim() === '2' || answer.trim().toLowerCase() === 'user' ? 'user' : 'project';
+    }
+
+    rl.close();
+    console.log('');
+}
+
+// Fallback si no se seleccionó nada
+if (!finalScope) finalScope = 'project';
+
+if (!['project', 'user'].includes(finalScope)) {
+    console.error(`❌ Invalid --scope: ${finalScope} (use "project" or "user")`);
+    process.exit(1);
+}
+
 let targets;
-if (args.harness) {
-    if (!tools.harnesses[args.harness]) {
-        console.error(`❌ Unknown harness: ${args.harness}`);
+if (finalHarness) {
+    if (!tools.harnesses[finalHarness]) {
+        console.error(`❌ Unknown harness: ${finalHarness}`);
         process.exit(1);
     }
-    targets = [args.harness];
+    targets = [finalHarness];
 } else if (args.all) {
     targets = Object.keys(tools.harnesses);
 } else {
     targets = await detectHarnesses(tools);
     if (targets.length === 0) {
-        console.warn(
-            `⚠️  No harness detected. Pass --harness <id> or --all to force.${dryRun ? '' : ''}`,
-        );
+        console.warn('⚠️  No harness detected. Pass --harness <id> or --all to force.');
         process.exit(0);
     }
 }
 
 console.log(
-    `🔍 Targets: ${targets.join(', ')} (scope: ${args.scope})${dryRun ? ' — dry-run, no changes will be made' : ''}\n`,
+    `🔍 Targets: ${targets.join(', ')} (scope: ${finalScope})${
+        dryRun ? ' — dry-run, no changes will be made' : ''
+    }\n`,
 );
 
 let copied = 0;
@@ -64,9 +107,9 @@ for (const id of targets) {
     }
 
     const manifest = JSON.parse(await readFile(join(srcDir, '_manifest.json'), 'utf8'));
-    const destTemplate = harness.dest[args.scope];
+    const destTemplate = harness.dest[finalScope];
     if (!destTemplate) {
-        console.warn(`⚠️  ${id}: no dest for scope "${args.scope}"`);
+        console.warn(`⚠️  ${id}: no dest for scope "${finalScope}"`);
         skippedHarnesses++;
         continue;
     }
@@ -84,7 +127,7 @@ for (const id of targets) {
     }
 
     if (harness.plugin) {
-        const changed = await handlePlugin(id, harness.plugin, args.scope, dryRun, log);
+        const changed = await handlePlugin(id, harness.plugin, finalScope, dryRun, log);
         if (changed) pluginChanges++;
     }
 }
@@ -93,7 +136,7 @@ console.log(
     dryRun
         ? `\n🔎 Dry-run: would copy ${copied} file(s) across ${targets.length - skippedHarnesses} harness(es).` +
               (pluginChanges ? ` Would update ${pluginChanges} plugin config(s).` : '') +
-              ` Nothing was written.`
+              ' Nothing was written.'
         : `\n🎉 Installed ${copied} file(s) across ${targets.length - skippedHarnesses} harness(es).` +
               (pluginChanges ? ` Updated ${pluginChanges} plugin config(s).` : ''),
 );
@@ -104,7 +147,7 @@ if (dryRun && skippedHarnesses > 0) {
     );
 }
 
-// ── Plugin registration ────────────────────────────────────────────────
+// ── Plugin registration ──────────────────────────────────────────────
 async function handlePlugin(id, plugin, scope, dry, logFn) {
     const configPath =
         scope === 'user'
