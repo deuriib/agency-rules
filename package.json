@@ -46,5 +46,8 @@
     "ajv": "^8.17.1",
     "gray-matter": "^4.0.3",
     "yaml": "^2.5.0"
+  },
+  "dependencies": {
+    "citty": "^0.2.2"
   }
 }
