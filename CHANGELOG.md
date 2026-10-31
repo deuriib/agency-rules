@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0](https://github.com/deuriib/agency-rules/compare/v0.6.1...v0.7.0) (2026-10-31)
+
+
+### Features
+
+* **cli:** support comma-separated lists for rules and harnesses ([925de5f](https://github.com/deuriib/agency-rules/commit/925de5f8526a11f120d85c9b4bd93a393ef6604c))
+* **cli:** support comma-separated lists for rules and harnesses ([1c7d74e](https://github.com/deuriib/agency-rules/commit/1c7d74e2d7c6929f50659a7852dda7ccc0fe607e)), closes [#13](https://github.com/deuriib/agency-rules/issues/13)
+
 ## [0.6.1](https://github.com/deuriib/agency-rules/compare/v0.6.0...v0.6.1) (2026-10-31)
 
 
