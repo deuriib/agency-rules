@@ -29,28 +29,28 @@ run = "biome check --write ."
 # ── Validation ────────────────────────────────────────────────────────
 [tasks.validate]
 description = "Validate each rule's frontmatter against the schema"
-run = "node scripts/validate.mjs"
+run = "node bin/agency-rules.mjs validate"
 
 # ── Conversion ────────────────────────────────────────────────────────
 [tasks.convert]
 description = "Compile rules/ into each harness's native format"
-run = "node scripts/convert.mjs"
+run = "node bin/agency-rules.mjs convert"
 sources = ["rules/**/*.md", "tools.json", "scripts/lib/**/*.mjs"]
 outputs = ["integrations/**/*"]
 
 [tasks."convert:dry-run"]
 description = "Preview which files convert would write (no writes)"
-run = "node scripts/convert.mjs --dry-run"
+run = "node bin/agency-rules.mjs convert --dry-run"
 
 # ── Install ───────────────────────────────────────────────────────────
 [tasks.install]
 description = "Install compiled artifacts into detected harnesses"
-run = "node scripts/install.mjs"
+run = "node bin/agency-rules.mjs install"
 depends = ["convert"]
 
 [tasks."install:dry-run"]
 description = "Preview which files install would copy (no writes, no convert)"
-run = "node scripts/install.mjs --dry-run"
+run = "node bin/agency-rules.mjs install --dry-run"
 
 # ── Tests ─────────────────────────────────────────────────────────────
 [tasks.test]
@@ -60,7 +60,7 @@ run = "node --test 'tests/**/*.test.mjs'"
 # ── List ──────────────────────────────────────────────────────────────
 [tasks.list]
 description = "List all available rules"
-run = "node scripts/list.mjs"
+run = "node bin/agency-rules.mjs list"
 
 # ── CI composition ────────────────────────────────────────────────────
 [tasks.ci]
