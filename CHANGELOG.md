@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0](https://github.com/deuriib/agency-rules/compare/v0.3.2...v0.4.0) (2026-10-31)
+
+
+### Features
+
+* **cli:** expose agency-rules binary and router ([dfb6b95](https://github.com/deuriib/agency-rules/commit/dfb6b95b8b6d9ac6f4622479527f182d9c1e637c))
+
 ## [0.3.2](https://github.com/deuriib/agency-rules/compare/v0.3.1...v0.3.2) (2026-10-31)
 
 
