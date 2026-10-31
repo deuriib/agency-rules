@@ -34,6 +34,10 @@ labels:
     color: "#fef2c0"
     description: "Tooling, dependencies, CI, formatting"
 
+  - name: "cli"
+    color: "#0052cc"
+    description: "Command-line interface, arguments, and output formatting"
+
   # ── Priority ─────────────────────────────────────────────────────────
   - name: "priority: critical"
     color: "#b60205"
