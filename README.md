@@ -140,6 +140,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Pull requests welcome.
 
 See [SECURITY.md](SECURITY.md) for responsible disclosure.
 
+![Repobeats analytics](https://repobeats.com/deuriib/agency-rules?theme=light&size=medium&period=30)
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
