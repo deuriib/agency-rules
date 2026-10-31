@@ -37,11 +37,14 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
-          registry-url: "https://registry.npmjs.org"
+          node-version: 24 # Node 24 incluye npm 11 por defecto
+          # registry-url: 'https://registry.npmjs.org'  <-- ELIMINAR ESTA LÍNEA
+
+      - name: Upgrade npm (por si acaso)
+        run: npm install -g npm@latest
 
       - run: npm ci
 
       - run: npm publish --access public
-        # No se necesita NODE_AUTH_TOKEN:
-        # npm usa OIDC automáticamente gracias a id-token: write
+        env:
+          NODE_AUTH_TOKEN: "" # Fuerza a npm a usar OIDC
