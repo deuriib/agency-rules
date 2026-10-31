@@ -31,14 +31,16 @@ if (input.isTTY && ((!finalHarness && !args.all) || !finalScope)) {
     if (!finalHarness && !args.all) {
         console.log('\n🎯 Select a harness to install into:');
         const keys = Object.keys(tools.harnesses);
-        keys.forEach((k, i) => console.log(`  ${i + 1}) ${k} (${tools.harnesses[k].label})`));
+        keys.forEach((k, i) => {
+            console.log(`  ${i + 1}) ${k} (${tools.harnesses[k].label})`);
+        });
         console.log(`  ${keys.length + 1}) Detect automatically`);
         console.log(`  ${keys.length + 2}) All harnesses`);
 
         const answer = await rl.question(`\nChoice [1-${keys.length + 2}] (default: detect): `);
         const num = parseInt(answer.trim(), 10);
 
-        if (!isNaN(num) && num >= 1 && num <= keys.length) {
+        if (!Number.isNaN(num) && num >= 1 && num <= keys.length) {
             finalHarness = keys[num - 1];
         } else if (num === keys.length + 2 || answer.trim().toLowerCase() === 'all') {
             args.all = true;
@@ -178,7 +180,7 @@ async function handlePlugin(id, plugin, scope, dry, logFn) {
     if (!dry) {
         config.plugin.push(plugin.entry);
         await mkdir(dirname(configPath), { recursive: true });
-        await writeFile(configPath, JSON.stringify(config, null, 2) + '\n');
+        await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
     }
 
     return true;

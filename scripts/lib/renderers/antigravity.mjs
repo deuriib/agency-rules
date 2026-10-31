@@ -10,21 +10,21 @@ import { wrap } from './_util.mjs';
  *   5. nothing                       → manual
  */
 export function renderAntigravity(rule, _harness) {
-  const d = rule.data;
-  let trigger = d.trigger;
+    const d = rule.data;
+    let trigger = d.trigger;
 
-  if (!trigger) {
-    if (d.alwaysApply === true) trigger = 'always_on';
-    else if (d.globs) trigger = 'glob';
-    else if (d.description) trigger = 'model_decision';
-    else trigger = 'manual';
-  }
+    if (!trigger) {
+        if (d.alwaysApply === true) trigger = 'always_on';
+        else if (d.globs) trigger = 'glob';
+        else if (d.description) trigger = 'model_decision';
+        else trigger = 'manual';
+    }
 
-  const fm = { trigger };
-  if (trigger === 'glob' && d.globs) {
-    fm.globs = Array.isArray(d.globs) ? d.globs.join(',') : d.globs;
-  }
-  if (d.description) fm.description = d.description;
+    const fm = { trigger };
+    if (trigger === 'glob' && d.globs) {
+        fm.globs = Array.isArray(d.globs) ? d.globs.join(',') : d.globs;
+    }
+    if (d.description) fm.description = d.description;
 
-  return wrap(fm, rule.body);
+    return wrap(fm, rule.body);
 }

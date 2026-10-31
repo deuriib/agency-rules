@@ -5,13 +5,13 @@ import { wrap } from './_util.mjs';
  * frontmatter carrying `name`, `description`, and optionally `tools`.
  */
 export function renderPiAgent(rule, _harness) {
-  const d = rule.data;
-  const fm = {
-    name: d.name,
-    description: d.description,
-  };
-  if (Array.isArray(d.tools) && d.tools.length > 0) {
-    fm.tools = d.tools;
-  }
-  return wrap(fm, rule.body);
+    const d = rule.data;
+    const fm = {
+        name: d.name,
+        description: d.description,
+    };
+    if (Array.isArray(d.tools) && d.tools.length > 0) {
+        fm.tools = d.tools;
+    }
+    return wrap(fm, rule.body);
 }
