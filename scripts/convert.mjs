@@ -14,7 +14,8 @@ export default defineCommand({
             type: 'boolean',
             description: 'Preview which files would be written (no writes)',
         },
-        harness: { type: 'string', description: 'Limit compilation to a specific harness' },
+        harness: { type: 'string', description: 'Limit to specific harnesses (comma-separated)' },
+        rules: { type: 'string', description: 'Limit to specific rule slugs (comma-separated)' },
     },
     async run({ args }) {
         const dryRun = args['dry-run'];
@@ -36,29 +37,51 @@ export default defineCommand({
         const INTEGRATIONS_DIR = process.env.INTEGRATIONS_DIR || 'integrations';
 
         const tools = JSON.parse(await readFile(TOOLS_PATH, 'utf8'));
-        const rules = await readRules(RULES_DIR);
+        const allRules = await readRules(RULES_DIR);
 
-        if (rules.length === 0) {
+        if (allRules.length === 0) {
             console.error(`❌ No rules found in ${RULES_DIR}`);
             process.exit(1);
         }
 
-        const harnessIds = args.harness ? [args.harness] : Object.keys(tools.harnesses);
+        let targetHarnesses;
+        if (args.harness) {
+            targetHarnesses = args.harness.split(',').map((s) => s.trim());
+            for (const id of targetHarnesses) {
+                if (!tools.harnesses[id]) {
+                    console.error(`❌ Unknown harness: ${id}`);
+                    process.exit(1);
+                }
+            }
+        } else {
+            targetHarnesses = Object.keys(tools.harnesses);
+        }
 
-        for (const id of harnessIds) {
-            if (!tools.harnesses[id]) {
-                console.error(`❌ Unknown harness: ${id}`);
+        let targetRules = allRules;
+        if (args.rules) {
+            const requestedRules = args.rules.split(',').map((s) => s.trim());
+            targetRules = allRules.filter((r) => requestedRules.includes(r.slug));
+
+            const missingRules = requestedRules.filter(
+                (slug) => !allRules.some((r) => r.slug === slug),
+            );
+            if (missingRules.length > 0) {
+                console.warn(`⚠️  The following rules were not found: ${missingRules.join(', ')}`);
+            }
+
+            if (targetRules.length === 0) {
+                console.error(`❌ No matching rules found to convert.`);
                 process.exit(1);
             }
         }
 
         console.log(
-            `📚 Found ${rules.length} rule(s) in ${RULES_DIR}${dryRun ? ' (dry-run — nothing will be written)' : ''}\n`,
+            `📚 Found ${targetRules.length} rule(s) in ${RULES_DIR}${dryRun ? ' (dry-run — nothing will be written)' : ''}\n`,
         );
 
         let totalFiles = 0;
 
-        for (const id of harnessIds) {
+        for (const id of targetHarnesses) {
             const harness = tools.harnesses[id];
             const render = renderers[harness.format];
             if (!render) {
@@ -69,7 +92,7 @@ export default defineCommand({
             const harnessDir = join(INTEGRATIONS_DIR, id);
             const manifest = [];
 
-            for (const rule of rules) {
+            for (const rule of targetRules) {
                 let output;
                 try {
                     output = render(rule, harness);
@@ -115,8 +138,8 @@ export default defineCommand({
         }
 
         const summary = dryRun
-            ? `\n🔎 Dry-run: would write ${totalFiles} file(s) across ${harnessIds.length} harness(es). Nothing was written.`
-            : `\n🎉 Wrote ${totalFiles} file(s) across ${harnessIds.length} harness(es).`;
+            ? `\n🔎 Dry-run: would write ${totalFiles} file(s) across ${targetHarnesses.length} harness(es). Nothing was written.`
+            : `\n🎉 Wrote ${totalFiles} file(s) across ${targetHarnesses.length} harness(es).`;
 
         console.log(summary);
     },
