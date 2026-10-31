@@ -37,14 +37,19 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24 # Node 24 incluye npm 11 por defecto
-          # registry-url: 'https://registry.npmjs.org'  <-- ELIMINAR ESTA LÍNEA
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
 
-      - name: Upgrade npm (por si acaso)
+      - name: Upgrade npm
         run: npm install -g npm@latest
 
       - run: npm ci
 
+      - name: Strip empty _authToken from .npmrc
+        run: |
+          NPMRC_PATH=$(npm config get userconfig)
+          if [ -f "$NPMRC_PATH" ]; then
+            sed -i '/_authToken/d' "$NPMRC_PATH"
+          fi
+
       - run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: "" # Fuerza a npm a usar OIDC
