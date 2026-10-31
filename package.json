@@ -1,6 +1,6 @@
 {
   "name": "agency-rules",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Write rules once. Run them in every harness.",
   "type": "module",
   "license": "MIT",
@@ -13,8 +13,18 @@
     "url": "https://github.com/deuriib/agency-rules/issues"
   },
   "homepage": "https://github.com/deuriib/agency-rules#readme",
-  "keywords": ["ai", "agents", "rules", "antigravity", "pi-agent", "opencode", "oh-my-pi"],
-  "engines": { "node": ">=20.12" },
+  "keywords": [
+    "ai",
+    "agents",
+    "rules",
+    "antigravity",
+    "pi-agent",
+    "opencode",
+    "oh-my-pi"
+  ],
+  "engines": {
+    "node": ">=20.12"
+  },
   "files": [
     "scripts/",
     "tools.json",

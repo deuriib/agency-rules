@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0](https://github.com/deuriib/agency-rules/compare/v0.1.0...v0.2.0) (2026-10-31)
+
+
+### Features
+
+* bootstrap agency-rules with mise and four harness renderers ([c1bf3c9](https://github.com/deuriib/agency-rules/commit/c1bf3c9f078d84f578f2e37633dcc87fc98f3831))
+* **install:** add interactive mode and harness/scope parameters ([e1996be](https://github.com/deuriib/agency-rules/commit/e1996bec3da5a34db23c06181dcb0071b35f5eff))
+* **rules:** enforce conventional commits standard ([53f78b9](https://github.com/deuriib/agency-rules/commit/53f78b97a8669db60b7ac2110f10d9ad5658df39))
+
+
+### Bug Fixes
+
+* **ci:** add missing mise sidecar for biome ([ded656e](https://github.com/deuriib/agency-rules/commit/ded656e16acc862ef975069459bc8dd324adc051))
+* **install:** resolve biome linting errors and formatting ([04f4fee](https://github.com/deuriib/agency-rules/commit/04f4feeabcd2667d66b95865d0b7dd687cdd4798))
+
 ## [Unreleased]
 
 ### Added
