@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1](https://github.com/deuriib/agency-rules/compare/v0.6.0...v0.6.1) (2026-10-31)
+
+
+### Bug Fixes
+
+* **pkg:** move runtime dependencies out of devDependencies ([b39c1c8](https://github.com/deuriib/agency-rules/commit/b39c1c8e1f4e46c36c5854f8887b64c335cce01a))
+
 ## [0.6.0](https://github.com/deuriib/agency-rules/compare/v0.5.0...v0.6.0) (2026-10-31)
 
 
