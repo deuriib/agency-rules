@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0](https://github.com/deuriib/agency-rules/compare/v0.7.0...v0.8.0) (2026-10-31)
+
+
+### Features
+
+* **rules:** add Nexus Strategy references ([75d4013](https://github.com/deuriib/agency-rules/commit/75d40130eb4fe71e96778c50622418fed5be1672))
+* **rules:** add Nexus Strategy references ([ef54d1c](https://github.com/deuriib/agency-rules/commit/ef54d1c6c05e38ab4ab79044729d23757289ca12)), closes [#16](https://github.com/deuriib/agency-rules/issues/16)
+
 ## [0.7.0](https://github.com/deuriib/agency-rules/compare/v0.6.1...v0.7.0) (2026-10-31)
 
 
