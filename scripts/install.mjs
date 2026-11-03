@@ -5,6 +5,7 @@ import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import { defineCommand } from 'citty';
 import { detectHarnesses, expandHome, pathExists } from './lib/detect.mjs';
+import { substituteSlug } from './lib/slug-template.mjs';
 
 export default defineCommand({
     meta: {
@@ -173,7 +174,7 @@ export default defineCommand({
             }
 
             for (const { slug, path: relPath } of filesToCopy) {
-                const destPath = expandHome(destTemplate.replace('{{slug}}', slug));
+                const destPath = expandHome(substituteSlug(destTemplate, slug));
                 if (dryRun) {
                     log(`${id}: would copy ${relPath} → ${destPath}`);
                 } else {

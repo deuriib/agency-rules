@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0](https://github.com/deuriib/agency-rules/compare/v0.9.0...v0.10.0) (2026-11-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* **contract:** harness ids are now the agent tool ids (`piAgent`, `ohMyPi` instead of `pi-agent`, `oh-my-pi`) and destination templates use the single-brace `{slug}` placeholder. `--harness pi-agent` must become `--harness piAgent`. The `tools.json` contract version is 2.
+
+### Refactors
+
+* **contract:** one vocabulary with `agency-agents` — `{slug}` and camelCase harness ids
+
 ## [0.9.0](https://github.com/deuriib/agency-rules/compare/v0.8.0...v0.9.0) (2026-11-02)
 
 

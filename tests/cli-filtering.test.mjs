@@ -1,10 +1,15 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { test } from 'node:test';
 
-test('comma-separated harness parsing', () => {
-    const input = 'antigravity,opencode,pi-agent';
-    const result = input.split(',').map((s) => s.trim());
-    assert.deepEqual(result, ['antigravity', 'opencode', 'pi-agent']);
+const tools = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'tools.json'), 'utf8'));
+
+test('every harness id in a --harness list is a declared harness', () => {
+    const input = 'antigravity,opencode,piAgent';
+    const requested = input.split(',').map((s) => s.trim());
+    const unknown = requested.filter((id) => !tools.harnesses[id]);
+    assert.deepEqual(unknown, [], 'a mistyped id exits 1 instead of converting silently');
 });
 
 test('comma-separated rules parsing', () => {

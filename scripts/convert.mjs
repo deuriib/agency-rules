@@ -3,6 +3,7 @@ import { dirname, join, resolve } from 'node:path';
 import { defineCommand } from 'citty';
 import { readRules } from './lib/frontmatter.mjs';
 import { renderers } from './lib/renderers/index.mjs';
+import { substituteSlug } from './lib/slug-template.mjs';
 
 export default defineCommand({
     meta: {
@@ -101,7 +102,7 @@ export default defineCommand({
                     process.exit(1);
                 }
 
-                const relPath = harness.integrationPath.replace('{{slug}}', rule.slug);
+                const relPath = substituteSlug(harness.integrationPath, rule.slug);
                 const outPath = join(harnessDir, relPath);
                 manifest.push({ slug: rule.slug, path: relPath, size: output.length });
                 totalFiles++;

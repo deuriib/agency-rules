@@ -123,7 +123,7 @@ than overwriting — a corrupted config is never silently clobbered.
 ## Security considerations
 
 - Rule slugs are validated against `^[a-z][a-z0-9-]*$` before they reach the
-  filesystem, preventing path traversal via `{{slug}}` substitution.
+  filesystem, preventing path traversal via `{slug}` substitution.
 - `install.mjs` only reads from `integrations/` and writes to paths derived
   from `tools.json` — it never reads arbitrary user input paths.
 - Renderers do not execute rule content; they only stringify it. No `eval`,
