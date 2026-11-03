@@ -25,11 +25,11 @@ Add a new key under `harnesses`. Every field matters:
   "label": "Example Agent",
   "format": "md-example",
   "installKind": "per-rule",
-  "integrationPath": "{{slug}}.md",
+  "integrationPath": "{slug}.md",
   "detect": { "dirs": [".example", "~/.example"] },
   "dest": {
-    "project": ".example/rules/{{slug}}.md",
-    "user": "~/.example/rules/{{slug}}.md"
+    "project": ".example/rules/{slug}.md",
+    "user": "~/.example/rules/{slug}.md"
   },
   "frontmatter": {
     "required": ["description"],
@@ -43,11 +43,11 @@ Add a new key under `harnesses`. Every field matters:
 
 Field checklist:
 
-- [ ] `id` — matches the key, kebab-case.
+- [ ] `id` — matches the key, and is the SAME id the agent tool uses in `agency-agents/tools.json` (`piAgent`, not `pi-agent`) so both contracts share one vocabulary.
 - [ ] `label` — human-readable name.
 - [ ] `format` — you will use this string as a key in `renderers/index.mjs`.
 - [ ] `installKind` — currently only `per-rule` is implemented.
-- [ ] `integrationPath` — path under `integrations/<id>/`. Use `{{slug}}`.
+- [ ] `integrationPath` — path under `integrations/<id>/`. Use `{slug}`.
 - [ ] `detect.dirs` / `detect.files` — where the harness lives.
 - [ ] `dest.project` / `dest.user` — install destinations.
 - [ ] `frontmatter.required` — fields the harness cannot run without.
@@ -162,9 +162,9 @@ Include in the description:
 
 ## Supported harnesses (current)
 
-| Harness | `format` | `installKind` | Path |
-| --- | --- | --- | --- |
-| Google Antigravity | `md-yaml-trigger` | `per-rule` | `.agents/rules/*.md` |
-| pi-agent | `md-rules-dir` | `per-rule` | `.pi/rules/<slug>/RULES.md` |
-| oh-my-pi (omp) | `md-or-mdc` | `per-rule` | `.omp/rules/*.md` |
-| OpenCode | `md-plugin` | `per-rule` | `.opencode/rules/*.md` |
+| Harness id | Product | `format` | `installKind` | Path |
+| --- | --- | --- | --- | --- |
+| `antigravity` | Google Antigravity | `md-yaml-trigger` | `per-rule` | `.agents/rules/*.md` |
+| `piAgent` | pi-agent | `md-rules-dir` | `per-rule` | `.pi/rules/<slug>/RULES.md` |
+| `ohMyPi` | oh-my-pi (omp) | `md-or-mdc` | `per-rule` | `.omp/rules/*.md` |
+| `opencode` | OpenCode | `md-plugin` | `per-rule` | `.opencode/rules/*.md` |

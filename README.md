@@ -16,12 +16,12 @@ exact same Node version and the exact same commands.
 
 Every coding agent has its own rule format:
 
-| Harness | Format | Location |
+| Harness (`--harness` id) | Format | Location |
 | --- | --- | --- |
-| Google Antigravity | YAML frontmatter with `trigger` | `.agents/rules/*.md` |
-| pi-agent | Per-rule directory with `RULES.md` | `.pi/rules/<slug>/RULES.md` |
-| oh-my-pi (omp) | Markdown with frontmatter | `.omp/rules/*.{md,mdc}` |
-| OpenCode | Markdown via [opencode-rules]("https://github.com/frap129/opencode-rules") plugin | `.opencode/rules/*.md` |
+| `antigravity` — Google Antigravity | YAML frontmatter with `trigger` | `.agents/rules/*.md` |
+| `piAgent` — pi-agent | Per-rule directory with `RULES.md` | `.pi/rules/<slug>/RULES.md` |
+| `ohMyPi` — oh-my-pi (omp) | Markdown with frontmatter | `.omp/rules/*.{md,mdc}` |
+| `opencode` — OpenCode | Markdown via [opencode-rules]("https://github.com/frap129/opencode-rules") plugin | `.opencode/rules/*.md` |
 
 Writing the same rule four times is a maintenance nightmare. `agency-rules`
 lets you write it **once** in a neutral format and compile it to all four

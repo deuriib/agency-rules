@@ -32,7 +32,7 @@ We will acknowledge within **3 business days** and aim to ship a fix within
 In scope:
 
 - Arbitrary code execution via crafted rule frontmatter (YAML injection).
-- Path traversal in `install.mjs` via `{{slug}}` substitution.
+- Path traversal in `install.mjs` via `{slug}` substitution.
 - Plugin registration tampering in `opencode.json`.
 - Any case where a compiled rule for one harness leaks the body or
   frontmatter of a different rule.
