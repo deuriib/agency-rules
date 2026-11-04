@@ -41,8 +41,9 @@ plumbing.
   from fields the contact agreed to, it is not a segment you may build.
 - **Allowlist the fields.** Names, addresses, and consent flags are not creative
   variables; an asset that needs more is asking the wrong question.
-- **Never put personal data in a UTM parameter, a creative, a filename, or an
-  audience name.** Those leak into analytics, screenshots, and shared links.
+- **A campaign surface is a leak surface** — a UTM parameter, a creative, an
+  audience name. Each one travels into analytics and into every screenshot of a
+  dashboard; the field-level rule lives in `data-minimization`.
 - **Never upload a list you cannot lawfully process**, and never build a lookalike
   from a source with no lawful basis.
 - **No shadow profiles.** Inferring an identity from device or behaviour signals
