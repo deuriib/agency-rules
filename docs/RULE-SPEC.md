@@ -17,7 +17,18 @@ rules/
 
 - `_schema.json` is the JSON Schema. It is not a rule and is skipped.
 - Any file starting with `_` is skipped.
-- `<slug>` should equal the frontmatter `name`.
+- `<slug>` **must** equal the frontmatter `name`. `validate` enforces it: a file
+  whose name disagrees with its `name` field is an error, because every reference
+  in every other rule resolves by slug while `list` and the manifests show the
+  filename.
+- **Unknown frontmatter keys are rejected.** The schema sets
+  `additionalProperties: false`, so a typo such as `triger` fails instead of being
+  silently ignored — which matters most for `trigger`, where a silent miss would
+  let the derivation chain in *Antigravity trigger precedence* take over without
+  the author noticing. The error names the key and suggests the near match.
+- **Duplicate keys are rejected.** YAML forbids them; `validate` reports
+  `invalid YAML frontmatter: duplicated mapping key (line N)` rather than aborting
+  the run.
 
 ---
 
