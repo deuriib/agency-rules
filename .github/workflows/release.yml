@@ -59,11 +59,50 @@ jobs:
           fi
 
       - name: Publish to npm unless the version already exists
+        # Three ways this step can be a no-op, and all three are success:
+        #
+        #   1. The release-created output was empty because release-please opened
+        #      the PR in an earlier run (0.9.0, 0.10.0). The guard below catches it.
+        #   2. The version is already on npm. Same guard.
+        #   3. The version is staged but the registry read has not caught up yet —
+        #      `npm view` lags a publish by seconds to minutes, so a run that
+        #      follows another publish of the same version passes the guard and is
+        #      then rejected with E409. That rejection is the idempotent outcome.
+        #
+        # Case 3 made a release run red for 0.14.0. Treating the conflict as
+        # success is the fix; any other publish failure still fails the job.
         run: |
           set -euo pipefail
           version=$(node -p "require('./package.json').version")
+
           if npm view "agency-rules@${version}" version >/dev/null 2>&1; then
             echo "agency-rules@${version} is already published — nothing to do."
             exit 0
           fi
-          npm publish --access public
+
+          # tee so the failure output is visible in the log even when the pipeline
+          # is treated as success below.
+          set +e
+          npm publish --access public 2>&1 | tee /tmp/npm-publish.log
+          status=${PIPESTATUS[0]}
+          set -e
+
+          if [ "$status" -eq 0 ]; then
+            echo "Published agency-rules@${version}."
+            exit 0
+          fi
+
+          if grep -qE 'E409|EPUBLISHCONFLICT|Cannot publish over' /tmp/npm-publish.log; then
+            echo "agency-rules@${version} was already staged or published — treating as success."
+            {
+              echo "### npm: ${version} already staged"
+              echo ''
+              echo 'The registry rejected the publish as a duplicate. That is the'
+              echo 'idempotent outcome, not a failure: the version was staged by an'
+              echo 'earlier run. Verify with `npm view agency-rules version`.'
+            } >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
+            exit 0
+          fi
+
+          echo "npm publish failed for a reason other than a duplicate version."
+          exit "$status"
