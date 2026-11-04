@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0](https://github.com/deuriib/agency-rules/compare/v0.15.0...v0.16.0) (2026-11-04)
+
+
+### Features
+
+* **rules:** add PRV privacy guidelines ([#78](https://github.com/deuriib/agency-rules/issues/78)) ([7cf5691](https://github.com/deuriib/agency-rules/commit/7cf5691c8bf7777032578883268b7258d4b7cb6b))
+
+
+### Bug Fixes
+
+* **validate:** harden frontmatter validation ([#81](https://github.com/deuriib/agency-rules/issues/81)) ([b5f3446](https://github.com/deuriib/agency-rules/commit/b5f3446eb4cc92892e02a3240b88f1c5e9db07c4))
+
 ## [0.15.0](https://github.com/deuriib/agency-rules/compare/v0.14.2...v0.15.0) (2026-11-04)
 
 
