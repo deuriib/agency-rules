@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0](https://github.com/deuriib/agency-rules/compare/v0.13.0...v0.14.0) (2026-11-04)
+
+
+### Features
+
+* **cli:** add eval command with a duplication gate ([#61](https://github.com/deuriib/agency-rules/issues/61)) ([0a2f638](https://github.com/deuriib/agency-rules/commit/0a2f638cc05c7831e48744da2141990e62101633))
+* **cli:** add rule generator command ([#58](https://github.com/deuriib/agency-rules/issues/58)) ([8aedac6](https://github.com/deuriib/agency-rules/commit/8aedac6f6dc50de079ba3cd12c37059826a1da15))
+* **cli:** add rule selection to interactive install ([#62](https://github.com/deuriib/agency-rules/issues/62)) ([e54c1f0](https://github.com/deuriib/agency-rules/commit/e54c1f019b6aa4f040474e8c3c396890f5df1f7c))
+* **cli:** show installation and sync status in list ([#64](https://github.com/deuriib/agency-rules/issues/64)) ([2ecfda0](https://github.com/deuriib/agency-rules/commit/2ecfda0db4a1f90308161a7812f7d74b03d10318))
+* **cli:** sync installed rules by content, not by copying everything ([#63](https://github.com/deuriib/agency-rules/issues/63)) ([6d0e444](https://github.com/deuriib/agency-rules/commit/6d0e44446756b2f0f0db18f7f5cba763afdb6877))
+* **eval:** add overlap scoring library ([#60](https://github.com/deuriib/agency-rules/issues/60)) ([0fdae7e](https://github.com/deuriib/agency-rules/commit/0fdae7e382cb917332e4fc38c01aadc0ff0591b6))
+* **harness:** support Cursor and Claude Code ([#65](https://github.com/deuriib/agency-rules/issues/65)) ([e8e7a75](https://github.com/deuriib/agency-rules/commit/e8e7a75689af133152369355a9ce387e61e381df))
+* **rules:** add automation rule ([#55](https://github.com/deuriib/agency-rules/issues/55)) ([17fcaea](https://github.com/deuriib/agency-rules/commit/17fcaea1ac291dde85e8f93c0b207e1a3f746d29))
+
 ## [0.13.0](https://github.com/deuriib/agency-rules/compare/v0.12.0...v0.13.0) (2026-11-04)
 
 
