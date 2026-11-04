@@ -4,7 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import { defineCommand } from 'citty';
-import { readRules } from './lib/frontmatter.mjs';
+import { readRulesOrExit } from './lib/cli-rules.mjs';
 import { assertValidCategory, assertValidSlug, buildRuleSkeleton } from './lib/rule-template.mjs';
 
 export default defineCommand({
@@ -51,7 +51,7 @@ export default defineCommand({
 
         // A duplicate name is a schema-level failure (`validate` rejects it), so
         // catch it while the file does not exist yet rather than after.
-        const existing = await readRules(RULES_DIR);
+        const existing = await readRulesOrExit(RULES_DIR);
         const clash = existing.find((r) => r.slug === slug);
         if (clash) {
             console.error(`❌ A rule named "${slug}" already exists at ${clash.source}`);

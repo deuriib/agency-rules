@@ -2,8 +2,8 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { defineCommand } from 'citty';
+import { readRulesOrExit } from './lib/cli-rules.mjs';
 import { detectHarnesses } from './lib/detect.mjs';
-import { readRules } from './lib/frontmatter.mjs';
 import { aggregateStatus, ruleStatus, STATUS_META } from './lib/status.mjs';
 
 const STATUS_ORDER_LABELS = ['synced', 'modified', 'missing', 'unbuilt'];
@@ -49,7 +49,7 @@ export default defineCommand({
             (existsSync(localRules) ? localRules : resolve(PACKAGE_ROOT, 'rules'));
         const INTEGRATIONS_DIR = process.env.INTEGRATIONS_DIR || 'integrations';
 
-        const rules = await readRules(RULES_DIR);
+        const rules = await readRulesOrExit(RULES_DIR);
         if (rules.length === 0) {
             console.error(`❌ No rules found in ${RULES_DIR}`);
             process.exit(1);

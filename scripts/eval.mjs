@@ -1,12 +1,8 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineCommand } from 'citty';
-import {
-    compareRulesDir,
-    DEFAULT_MIN_UNIT_TOKENS,
-    DEFAULT_UNIT_THRESHOLD,
-    findViolations,
-} from './lib/overlap.mjs';
+import { readRulesOrExit } from './lib/cli-rules.mjs';
+import { DEFAULT_MIN_UNIT_TOKENS, DEFAULT_UNIT_THRESHOLD, findViolations } from './lib/overlap.mjs';
 
 const GATE_THRESHOLD = 10;
 const GATE_MIN_UNITS = 2;
@@ -60,10 +56,8 @@ export default defineCommand({
             process.env.RULES_DIR ||
             (existsSync(localRules) ? localRules : resolve(PACKAGE_ROOT, 'rules'));
 
-        const { perRule, duplicates } = await compareRulesDir(RULES_DIR, {
-            unitThreshold,
-            minTokens,
-        });
+        const rules = await readRulesOrExit(RULES_DIR);
+        const { perRule, duplicates } = compareRules(rules, { unitThreshold, minTokens });
 
         if (perRule.length === 0) {
             console.error(`❌ No rules found in ${RULES_DIR}`);
