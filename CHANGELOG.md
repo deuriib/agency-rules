@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0](https://github.com/deuriib/agency-rules/compare/v0.12.0...v0.13.0) (2026-11-04)
+
+
+### Features
+
+* **rules:** add deny-hard-gates rule ([#51](https://github.com/deuriib/agency-rules/issues/51)) ([8b9849d](https://github.com/deuriib/agency-rules/commit/8b9849dfda81e03eb42e40fc1012fd78e4805579))
+* **rules:** add DOCS documentation guidelines ([#50](https://github.com/deuriib/agency-rules/issues/50)) ([24369d0](https://github.com/deuriib/agency-rules/commit/24369d0d1cb9c083724a5c305f152a493598c539))
+* **rules:** add foundation-conduct rule ([#54](https://github.com/deuriib/agency-rules/issues/54)) ([8ebb085](https://github.com/deuriib/agency-rules/commit/8ebb0857dacc1d96a4e5f0c68445382d2e4ab7d4))
+* **security:** add SEC security guidelines ([#53](https://github.com/deuriib/agency-rules/issues/53)) ([45dcb41](https://github.com/deuriib/agency-rules/commit/45dcb41516b2c964cc955cb6fefb94d6dc8fd311))
+
 ## [0.12.0](https://github.com/deuriib/agency-rules/compare/v0.11.1...v0.12.0) (2026-11-04)
 
 
