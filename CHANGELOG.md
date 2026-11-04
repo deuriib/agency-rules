@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0](https://github.com/deuriib/agency-rules/compare/v0.18.0...v0.19.0) (2026-11-04)
+
+
+### Features
+
+* **rules:** add FIN finance guidelines ([#92](https://github.com/deuriib/agency-rules/issues/92)) ([82a3b48](https://github.com/deuriib/agency-rules/commit/82a3b48f0f26d93355b50f472072c838399636cd))
+
 ## [0.18.0](https://github.com/deuriib/agency-rules/compare/v0.17.0...v0.18.0) (2026-11-04)
 
 
