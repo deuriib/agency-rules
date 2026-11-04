@@ -26,6 +26,11 @@ run = "biome lint ."
 description = "Format, lint, and organize imports (write mode)"
 run = "biome check --write ."
 
+# ── Scaffold ──────────────────────────────────────────────────────────
+[tasks.create-rule]
+description = "Scaffold a new rule under rules/ (e.g. mise run create-rule -- api-review)"
+run = "node bin/agency-rules.mjs new"
+
 # ── Validation ────────────────────────────────────────────────────────
 [tasks.validate]
 description = "Validate each rule's frontmatter against the schema"
