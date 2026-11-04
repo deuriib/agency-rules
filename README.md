@@ -40,6 +40,9 @@ npx agency-rules new api-review --description "Use when reviewing REST endpoints
 # Validate rules
 npx agency-rules validate
 
+# Score textual overlap between rules (fails above the gate)
+npx agency-rules eval
+
 # Compile rules
 npx agency-rules convert
 
@@ -50,6 +53,23 @@ npx agency-rules install
 `new` refuses a slug that already exists, a slug that is not kebab-case, and a
 missing `--description` — the description is the only field a harness can match
 on, so it cannot be generated as a placeholder.
+
+### Catching duplication
+
+The most common defect in a growing rule set is a rule that restates one that
+already exists, which produces two sources of truth that drift apart. `eval`
+measures it instead of trusting review:
+
+```bash
+npx agency-rules eval                  # gate at 10% of a rule's units restated
+npx agency-rules eval --json           # machine-readable
+npx agency-rules eval --rule devops    # evidence for one rule
+```
+
+It splits each body into units (a bullet or a sentence), compares them on
+word-pair overlap, and reports the **share of a rule that already exists
+elsewhere**, per rule and per pair. The gate requires both a percentage and a
+minimum unit count, so one shared sentence in a small rule cannot fail a build.
 
 ---
 

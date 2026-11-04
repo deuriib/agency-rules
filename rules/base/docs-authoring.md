@@ -32,8 +32,9 @@ convention that now applies everywhere — nothing else.
   even when the conversation is not.
 - **Update the owning table, not just the paragraph.** A new flag with no row in
   the CLI table does not exist for the reader.
-- **The agent-instruction file is documentation too.** When a convention
-  changes, the startup file an agent reads carries the same change.
+- **Keep the agent-instruction file in step with the docs.** When a convention
+  changes, the startup file describes it the same way the page does — two
+  phrasings of one rule is a third rule.
 
 ## Examples must be true
 

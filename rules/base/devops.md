@@ -38,8 +38,9 @@ flags and environment parity in `architecture`.
 
 ## Secrets and identity
 
-- **No secret in a pipeline file, log, or artifact.** Prefer OIDC federation or
-  a short-lived token over a long-lived static credential.
+- **No secret in a pipeline file, log, or artifact.** The pipeline's own
+  credentials are governed by `identity-and-data` — federated, scoped, and
+  rotated.
 - **Least privilege for the token the pipeline holds.** A test job does not need
   deploy rights.
 - **Never print a secret while debugging.** Mask it at the source, not in the log

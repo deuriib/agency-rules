@@ -56,6 +56,7 @@ four native harness formats, and why the pipeline is shaped the way it is.
 | **Renderers** | `scripts/lib/renderers/*.mjs` | Pure functions: `(rule, harness) → markdown string`. No I/O. |
 | **Installer** | `scripts/install.mjs` | Detects harnesses, copies compiled files to real destinations, registers plugins. |
 | **Validator** | `scripts/validate.mjs` | Runs the schema and checks slug uniqueness before anything else runs. |
+| **Overlap eval** | `scripts/eval.mjs`, `scripts/lib/overlap.mjs` | Scores textual overlap between rules so a restated rule fails CI instead of being caught by review. Pure maths in the library, reporting in the command. |
 | **Orchestration** | `mise.toml` | Pins Node version, defines tasks, composes `ci`, wires the `postinstall` hook. |
 
 Each layer has exactly one job. Renderers never touch the filesystem; the

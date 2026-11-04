@@ -21,6 +21,7 @@ const main = defineCommand({
     install: () => import('../scripts/install.mjs').then((m) => m.default),
     validate: () => import('../scripts/validate.mjs').then((m) => m.default),
     new: () => import('../scripts/new.mjs').then((m) => m.default),
+    eval: () => import('../scripts/eval.mjs').then((m) => m.default),
   },
 });
 
