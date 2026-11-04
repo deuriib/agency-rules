@@ -5,6 +5,7 @@ import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import { defineCommand } from 'citty';
 import { detectHarnesses, expandHome, pathExists } from './lib/detect.mjs';
+import { parseSelection, pickByIndices, renderMenu } from './lib/selection.mjs';
 import { substituteSlug } from './lib/slug-template.mjs';
 
 export default defineCommand({
@@ -130,6 +131,36 @@ export default defineCommand({
             `🔍 Targets: ${targets.join(', ')} (scope: ${finalScope})${dryRun ? ' — dry-run, no changes will be made' : ''}\n`,
         );
 
+        // Rule selection happens after the harnesses are known, because the
+        // candidate list comes from the manifests that will actually be copied.
+        // Offering slugs from `rules/` instead would list rules that were never
+        // compiled for the selected harness.
+        let selectedRules = rulesToInstall;
+        if (input.isTTY && !selectedRules && targets.length > 0) {
+            const slugs = await collectAvailableSlugs(targets, INTEGRATIONS_DIR);
+            if (slugs.length > 0) {
+                const rl = createInterface({ input, output });
+                console.log(renderMenu({ title: '📚 Select rules to install:', items: slugs }));
+                const answer = await rl.question('');
+                rl.close();
+                console.log('');
+
+                const parsed = parseSelection(answer, { length: slugs.length });
+                if (parsed.kind === 'invalid') {
+                    console.error(
+                        `❌ Invalid selection "${parsed.token}" — expected 1-${slugs.length} or "all".`,
+                    );
+                    process.exit(1);
+                }
+                if (parsed.kind === 'some') selectedRules = pickByIndices(parsed.indices, slugs);
+                if (selectedRules) {
+                    console.log(
+                        `📚 Rules: ${selectedRules.length === slugs.length ? 'all' : selectedRules.join(', ')}\n`,
+                    );
+                }
+            }
+        }
+
         let copied = 0;
         let skippedHarnesses = 0;
         let pluginChanges = 0;
@@ -155,12 +186,12 @@ export default defineCommand({
             }
 
             let filesToCopy = manifest.files;
-            if (rulesToInstall) {
-                filesToCopy = manifest.files.filter((f) => rulesToInstall.includes(f.slug));
+            if (selectedRules) {
+                filesToCopy = manifest.files.filter((f) => selectedRules.includes(f.slug));
 
                 // Warn if requested rules are missing from this specific harness manifest
                 const availableSlugs = manifest.files.map((f) => f.slug);
-                const missing = rulesToInstall.filter((slug) => !availableSlugs.includes(slug));
+                const missing = selectedRules.filter((slug) => !availableSlugs.includes(slug));
                 if (missing.length > 0) {
                     console.warn(
                         `⚠️  ${id}: The following requested rules were not found in the compiled output: ${missing.join(', ')}`,
@@ -185,7 +216,7 @@ export default defineCommand({
                 copied++;
             }
 
-            if (harness.plugin && (!rulesToInstall || filesToCopy.length > 0)) {
+            if (harness.plugin && (!selectedRules || filesToCopy.length > 0)) {
                 const changed = await handlePlugin(id, harness.plugin, finalScope, dryRun, log);
                 if (changed) pluginChanges++;
             }
@@ -207,6 +238,21 @@ export default defineCommand({
         }
     },
 });
+
+async function collectAvailableSlugs(targets, integrationsDir) {
+    const slugs = new Set();
+    for (const id of targets) {
+        const manifestPath = join(integrationsDir, id, '_manifest.json');
+        if (!(await pathExists(manifestPath))) continue;
+        try {
+            const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+            for (const file of manifest.files ?? []) slugs.add(file.slug);
+        } catch {
+            // A malformed manifest is reported when the copy loop reaches it.
+        }
+    }
+    return [...slugs].sort();
+}
 
 async function handlePlugin(id, plugin, scope, dry, logFn) {
     const configPath =
