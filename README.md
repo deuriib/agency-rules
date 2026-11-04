@@ -43,6 +43,9 @@ npx agency-rules validate
 # Score textual overlap between rules (fails above the gate)
 npx agency-rules eval
 
+# See which rules are installed, and whether they still match the compiled output
+npx agency-rules list --harness antigravity
+
 # Compile rules
 npx agency-rules convert
 
