@@ -25,6 +25,15 @@ Every coding agent has its own rule format:
 | `cursor` — Cursor | Markdown with `description` / `globs` / `alwaysApply` | `.cursor/rules/*.mdc` |
 | `claudeCode` — Claude Code | Markdown with `paths` for conditional loading | `.claude/rules/*.md` |
 
+**pi-agent needs a loader.** Pi does not read `<agent-dir>/rules` on its own, so
+`piAgent` output is only live when a rules extension is installed — the
+reference one reads each `RULES.md`, puts its `name` and `description` in the
+system prompt, and exposes the body through a `read_rule` tool. That loader
+resolves rules from `<agent-dir>/rules`, which is why the project destination
+mirrors it as `.pi/agent/rules` rather than `.pi/rules`: a path the compiler
+writes and the loader never reads installs cleanly and reaches no prompt.
+Every other harness here is read natively by its agent.
+
 Writing the same rule four times is a maintenance nightmare. `agency-rules`
 lets you write it **once** in a neutral format and compile it to all four
 with a single command, driven by a declarative contract (`tools.json`).
