@@ -216,7 +216,9 @@ export default defineCommand({
                     `${entry.id} (${
                         entry.skipped === 'no-dest'
                             ? `no dest for scope "${finalScope}" in tools.json`
-                            : 'no compiled output'
+                            : entry.skipped === 'empty-manifest'
+                              ? 'manifest lists no files'
+                              : 'no compiled output'
                     })`,
             );
             const which = chosenExplicitly ? 'requested' : 'detected';
@@ -341,6 +343,20 @@ async function planInstall(targets, tools, scope, integrationsDir) {
             console.error(`❌ ${id}: cannot read ${manifestPath} (${reason}).`);
             console.error('   Run "agency-rules convert" to rebuild the compiled output.');
             process.exit(1);
+        }
+
+        // A manifest that declares no files is a broken build, not an empty
+        // install. Counting targets rather than files let this end in
+        // "🎉 Installed 0 file(s)" and exit 0 — the same green-but-empty run that
+        // a missing `integrations/<id>/` used to produce. `convert` cannot emit
+        // this shape, so it only arrives from a hand-edited or third-party
+        // manifest; the installer should still refuse to call it a success.
+        if (!Array.isArray(manifest.files) || manifest.files.length === 0) {
+            console.warn(
+                `⚠️  ${id}: ${manifestPath} lists no files, skipping. Run "agency-rules convert" to rebuild it.`,
+            );
+            entries.push({ id, harness, skipped: 'empty-manifest' });
+            continue;
         }
 
         // Reported here, before the copy loop: a warning that arrives after a

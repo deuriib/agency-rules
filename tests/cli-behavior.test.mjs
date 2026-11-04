@@ -276,6 +276,70 @@ test('install reports a corrupt manifest instead of a stack trace', async () => 
     assert.doesNotMatch(run.stderr, /\n\s+at /, 'no stack trace');
 });
 
+test('a manifest listing no files is a failure, not an empty install', async () => {
+    // The residual from the exit-code work: the gate counted targets, not files,
+    // so a manifest that declared nothing still ended in "🎉 Installed 0 file(s)"
+    // and exit 0.
+    const project = await tempDir('agency-rules-install-');
+    const integrations = join(project, 'integrations');
+    await mkdir(join(integrations, 'cursor'), { recursive: true });
+    await writeFile(
+        join(integrations, 'cursor', '_manifest.json'),
+        JSON.stringify({ harness: 'cursor', format: 'md-cursor-mdc', partial: false, files: [] }),
+    );
+
+    const run = await runCli(['install', '--harness', 'cursor', '--scope', 'project'], {
+        cwd: project,
+        env: { INTEGRATIONS_DIR: integrations },
+    });
+    assert.equal(run.code, 1);
+    assert.match(run.stderr, /lists no files/);
+    assert.match(run.stderr, /cursor \(manifest lists no files\)/);
+    assert.doesNotMatch(run.stdout, /🎉 Installed/, 'no success line for an empty build');
+});
+
+test('a manifest with no files key is reported, not crashed on', async () => {
+    const project = await tempDir('agency-rules-install-');
+    const integrations = join(project, 'integrations');
+    await mkdir(join(integrations, 'cursor'), { recursive: true });
+    await writeFile(
+        join(integrations, 'cursor', '_manifest.json'),
+        JSON.stringify({ harness: 'cursor', format: 'md-cursor-mdc' }),
+    );
+
+    const run = await runCli(['install', '--harness', 'cursor', '--scope', 'project'], {
+        cwd: project,
+        env: { INTEGRATIONS_DIR: integrations },
+    });
+    assert.equal(run.code, 1);
+    assert.match(run.stderr, /lists no files/);
+    assert.doesNotMatch(run.stderr, /\n\s+at /, 'no stack trace');
+});
+
+test('an empty manifest next to a real one is skipped, not fatal', async () => {
+    const dir = await tempDir();
+    const project = await tempDir('agency-rules-install-');
+    const integrations = join(dir, 'integrations');
+    await runCli(['convert', '--harness', 'cursor', '--rules', 'typescript'], {
+        cwd: dir,
+        env: { INTEGRATIONS_DIR: integrations },
+    });
+    await mkdir(join(integrations, 'opencode'), { recursive: true });
+    await writeFile(
+        join(integrations, 'opencode', '_manifest.json'),
+        JSON.stringify({ harness: 'opencode', format: 'md-plugin', files: [] }),
+    );
+
+    const run = await runCli(
+        ['install', '--harness', 'cursor,opencode', '--scope', 'project', '--rules', 'typescript'],
+        { cwd: project, env: { INTEGRATIONS_DIR: integrations } },
+    );
+    assert.equal(run.code, 0, run.stderr);
+    assert.match(run.stderr, /opencode: .*lists no files/);
+    assert.match(run.stdout, /🎉 Installed 1 file\(s\)/);
+    assert.match(run.stdout, /1 harness\(es\) skipped/);
+});
+
 test('convert fails before resetting anything when a harness has no renderer', async () => {
     const dir = await tempDir();
     const integrations = join(dir, 'integrations');
