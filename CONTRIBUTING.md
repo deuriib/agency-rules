@@ -38,7 +38,10 @@ If `mise run ci` fails on a fresh clone, that's a bug — please open an issue.
 
 1. **Branch** from `main`: `git switch -c feat/my-rule`.
 2. **Edit** files under `rules/` (or `scripts/lib/renderers/` for a new
-   harness).
+   harness). To start a rule, scaffold it:
+   `mise run create-rule -- api-review` then fill in the description and the
+   placeholder bullets. The generator refuses a duplicate slug and a missing
+   description.
 3. **Format + lint**: `mise run check` (Biome, write mode — fixes automatically).
 4. **Validate**: `mise run validate`.
 5. **Convert**: `mise run convert` and inspect `integrations/`.
@@ -47,7 +50,39 @@ If `mise run ci` fails on a fresh clone, that's a bug — please open an issue.
 7. **Commit** using Conventional Commits (see below).
 8. **Push** and open a PR.
 
-The `mise run ci` command runs all three checks. Run it before pushing.
+`mise run ci` runs the whole pipeline — `validate`, `eval`, `check`, `convert`,
+`test` — in that order. Run it before pushing.
+
+### Checking a rule set for duplication
+
+`mise run eval` scores how much of each rule already exists in another one. It
+splits rule bodies into units (a bullet or a sentence), compares them on word-pair
+overlap, and fails when **≥10% of a rule's units are restated in another rule and
+at least 2 units are**. The percentage alone is not enough: a small rule sharing
+one sentence is 12.5% and means nothing.
+
+```bash
+mise run eval                    # the gate
+mise run eval -- --json          # per-rule shares + every matched unit
+mise run eval -- --rule devops   # evidence for one rule
+```
+
+When it flags something, the fix is usually to **reference** the owning rule
+instead of restating it — not to merge the two rules.
+
+### Trying the installer without touching your real config
+
+`install` reads `INTEGRATIONS_DIR` and writes relative to the current directory,
+so an end-to-end check runs in a throwaway folder:
+
+```bash
+mkdir -p /tmp/install-check && cd /tmp/install-check
+INTEGRATIONS_DIR=$OLDPWD/integrations node $OLDPWD/bin/agency-rules.mjs \
+  install --harness cursor --scope project --dry-run
+```
+
+Run it without `--dry-run` twice: the second run should report every file as
+`unchanged` and write nothing.
 
 ---
 

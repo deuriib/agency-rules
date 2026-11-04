@@ -125,14 +125,16 @@ All commands go through mise:
 | Command | What it does |
 | --- | --- |
 | `mise run setup` | Install Node dependencies (`npm ci`) |
+| `mise run create-rule -- <slug>` | Scaffold a new rule skeleton |
 | `mise run validate` | Validate every rule's frontmatter against `rules/_schema.json` |
+| `mise run eval` | Score textual overlap between rules (fails above the gate) |
 | `mise run check` | Format + lint + organize imports with Biome (write mode) |
 | `mise run convert` | Compile `rules/` → `integrations/<harness>/` |
 | `mise run convert:dry-run` | Preview which files `convert` would write (no writes) |
-| `mise run install` | Copy compiled output into harness directories |
+| `mise run install` | Sync compiled output into harness directories |
 | `mise run install:dry-run` | Preview which files `install` would copy (no writes) |
 | `mise run test` | Run the Node test suite |
-| `mise run ci` | Full pipeline (`validate` → `check` → `convert` → `test`) |
+| `mise run ci` | Full pipeline (`validate` → `eval` → `check` → `convert` → `test`) |
 
 See `mise tasks` for the up-to-date list.
 
@@ -146,6 +148,61 @@ mise run convert:dry-run            # see generated file paths + sizes
 mise run convert                    # actually write to integrations/
 mise run install:dry-run -- --all   # see copy destinations
 mise run install -- --all           # actually copy into harness dirs
+```
+
+### Interactive installer
+
+Run `mise run install` (or `npx agency-rules install`) with no arguments and it
+asks three questions instead of guessing:
+
+```text
+🎯 Select harnesses to install into:
+  1) antigravity (Google Antigravity)
+  2) piAgent (Pi Coding Agent)
+  ...
+  5) cursor (Cursor)
+  6) claudeCode (Claude Code)
+  7) Detect automatically
+  8) All harnesses
+
+🌍 Select installation scope:
+  1) project (local to this repo)
+  2) user (global for your user)
+
+📚 Select rules to install:
+  1) agentmemory
+  2) architecture
+  ...
+  all) All
+```
+
+- **Harnesses** accepts a comma-separated list (`1,5`), `detect` to use the
+  directories already on your machine, or `all` to ignore detection.
+- **Scope** decides which destination column in `tools.json` is used.
+- **Rules** reads its list from the compiled manifests of the harnesses you
+  picked, so you can never select a rule that was not built for them. Enter
+  selects everything.
+
+Every prompt is skipped when the equivalent flag is supplied, so scripted runs
+never block:
+
+```bash
+npx agency-rules install --harness cursor --scope project --rules typescript,go
+```
+
+`install` is also a **sync**, not a blind copy: each rule is classified as
+`🆕 added`, `🔄 updated`, or `⏭️ unchanged (skipped)`, and only the first two are
+written. An unchanged file keeps its mtime, which matters because a harness
+watching its rules directory treats a timestamp bump as a reload.
+
+To see where you stand at any time:
+
+```bash
+npx agency-rules list --harness cursor
+# ✅ synced   installed and matches the compiled output
+# 🔄 modified installed, but your local copy differs (edited, or not re-installed)
+# ⬜ missing  compiled, never installed
+# ❓ unbuilt  in rules/, never compiled
 ```
 
 ---
