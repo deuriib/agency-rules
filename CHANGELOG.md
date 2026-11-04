@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.3](https://github.com/deuriib/agency-rules/compare/v0.19.2...v0.19.3) (2026-11-04)
+
+
+### Bug Fixes
+
+* **pkg:** declare the bin target without a ./ prefix ([#101](https://github.com/deuriib/agency-rules/issues/101)) ([e4a5a90](https://github.com/deuriib/agency-rules/commit/e4a5a9037867b0093f778d996edf3536a27cc90f)), closes [#100](https://github.com/deuriib/agency-rules/issues/100)
+
 ## [0.19.2](https://github.com/deuriib/agency-rules/compare/v0.19.1...v0.19.2) (2026-11-04)
 
 
