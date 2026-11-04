@@ -3,6 +3,8 @@ import { test } from 'node:test';
 import matter from 'gray-matter';
 
 import { renderAntigravity } from '../scripts/lib/renderers/antigravity.mjs';
+import { renderClaudeRules } from '../scripts/lib/renderers/claude-code.mjs';
+import { renderCursor } from '../scripts/lib/renderers/cursor.mjs';
 import { renderOhMyPi } from '../scripts/lib/renderers/oh-my-pi.mjs';
 import { renderOpencode } from '../scripts/lib/renderers/opencode.mjs';
 import { renderPiAgent } from '../scripts/lib/renderers/pi-agent.mjs';
@@ -85,4 +87,55 @@ test('all renderers preserve the rule body verbatim', () => {
     for (const render of [renderAntigravity, renderPiAgent, renderOhMyPi, renderOpencode]) {
         assert.match(render(baseRule), /- No any\./);
     }
+});
+
+// ── Cursor ───────────────────────────────────────────────────────────────
+test('cursor: emits description, globs as a joined string, and alwaysApply', () => {
+    const fm = matter(renderCursor(baseRule)).data;
+    assert.equal(fm.description, 'Rules for TS.');
+    assert.equal(fm.globs, '**/*.ts,**/*.tsx');
+    assert.equal(fm.alwaysApply, undefined);
+});
+
+test('cursor: alwaysApply is preserved and suppresses globs', () => {
+    const rule = { ...baseRule, data: { ...baseRule.data, alwaysApply: true } };
+    const fm = matter(renderCursor(rule)).data;
+    assert.equal(fm.alwaysApply, true);
+    assert.equal(fm.globs, undefined, 'alwaysApply overrides globs');
+});
+
+test('cursor: does not emit name, which Cursor derives from the filename', () => {
+    assert.equal(matter(renderCursor(baseRule)).data.name, undefined);
+});
+
+test('cursor: a single glob string passes through unchanged', () => {
+    const rule = { ...baseRule, data: { ...baseRule.data, globs: '**/*.ts' } };
+    assert.equal(matter(renderCursor(rule)).data.globs, '**/*.ts');
+});
+
+// ── Claude Code ──────────────────────────────────────────────────────────
+test('claude-code: maps globs to paths as an array', () => {
+    const fm = matter(renderClaudeRules(baseRule)).data;
+    assert.deepEqual(fm.paths, ['**/*.ts', '**/*.tsx']);
+});
+
+test('claude-code: omits description, which the format does not define', () => {
+    assert.equal(matter(renderClaudeRules(baseRule)).data.description, undefined);
+});
+
+test('claude-code: alwaysApply produces no paths, because that is the default', () => {
+    const rule = { ...baseRule, data: { ...baseRule.data, alwaysApply: true } };
+    assert.equal(matter(renderClaudeRules(rule)).data.paths, undefined);
+});
+
+test('claude-code: a rule with nothing to declare compiles to body-only Markdown', () => {
+    const rule = { slug: 'x', data: { name: 'x', description: 'd' }, body: '# X\n\n- rule.' };
+    const out = renderClaudeRules(rule);
+    assert.ok(!out.startsWith('---'), 'no empty frontmatter block');
+    assert.match(out, /^# X/);
+});
+
+test('a single glob string becomes a one-element paths array', () => {
+    const rule = { ...baseRule, data: { ...baseRule.data, globs: '**/*.ts' } };
+    assert.deepEqual(matter(renderClaudeRules(rule)).data.paths, ['**/*.ts']);
 });

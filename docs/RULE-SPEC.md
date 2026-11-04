@@ -46,16 +46,16 @@ the frontmatter and is handled by the renderer.
 
 ## Compatibility matrix
 
-| Field | Antigravity | pi-agent | oh-my-pi | OpenCode |
-| --- | --- | --- | --- | --- |
-| `name` | (derived) | ✅ used | ✅ used | — |
-| `description` | ✅ emitted | ✅ emitted | ✅ emitted | ✅ used for matching |
-| `globs` | ✅ joined as string under `trigger: glob` | ✗ dropped | ✅ preserved | ✅ preserved |
-| `alwaysApply` | ✅ → `trigger: always_on` | ✗ dropped | ✅ preserved | ✗ dropped |
-| `trigger` | ✅ emitted | ✗ dropped | ✗ dropped | ✗ dropped |
-| `match` | ✗ dropped | ✗ dropped | ✗ dropped | ✅ preserved |
-| `tags` | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped |
-| `tools` | ✗ dropped | ✅ preserved | ✗ dropped | ✗ dropped |
+| Field | Antigravity | pi-agent | oh-my-pi | OpenCode | Cursor | Claude Code |
+| --- | --- | --- | --- | --- | --- | --- |
+| `name` | (derived) | ✅ used | ✅ used | — | ✗ dropped (filename) | ✗ dropped |
+| `description` | ✅ emitted | ✅ emitted | ✅ emitted | ✅ used for matching | ✅ emitted | ✗ dropped (not in schema) |
+| `globs` | ✅ joined as string under `trigger: glob` | ✗ dropped | ✅ preserved | ✅ preserved | ✅ joined as string | ✅ → `paths`, array |
+| `alwaysApply` | ✅ → `trigger: always_on` | ✗ dropped | ✅ preserved | ✗ dropped | ✅ preserved, suppresses `globs` | ✅ as *absence* of `paths` |
+| `trigger` | ✅ emitted | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped |
+| `match` | ✗ dropped | ✗ dropped | ✗ dropped | ✅ preserved | ✗ dropped | ✗ dropped |
+| `tags` | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped |
+| `tools` | ✗ dropped | ✅ preserved | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped |
 
 "✗ dropped" means the field is not emitted in that harness's output. It does
 not mean it's an error to set it — other harnesses may need it. The renderer

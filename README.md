@@ -22,6 +22,8 @@ Every coding agent has its own rule format:
 | `piAgent` — pi-agent | Per-rule directory with `RULES.md` | `.pi/rules/<slug>/RULES.md` |
 | `ohMyPi` — oh-my-pi (omp) | Markdown with frontmatter | `.omp/rules/*.{md,mdc}` |
 | `opencode` — OpenCode | Markdown via [opencode-rules]("https://github.com/frap129/opencode-rules") plugin | `.opencode/rules/*.md` |
+| `cursor` — Cursor | Markdown with `description` / `globs` / `alwaysApply` | `.cursor/rules/*.mdc` |
+| `claudeCode` — Claude Code | Markdown with `paths` for conditional loading | `.claude/rules/*.md` |
 
 Writing the same rule four times is a maintenance nightmare. `agency-rules`
 lets you write it **once** in a neutral format and compile it to all four
