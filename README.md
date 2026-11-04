@@ -4,7 +4,7 @@
 
 `agency-rules` compiles a single set of generic Markdown rules into the
 native formats expected by **Google Antigravity**, **pi-agent**,
-**oh-my-pi (omp)**, and **OpenCode** (via the [opencode-rules]("https://github.com/frap129/opencode-rules") plugin).
+**oh-my-pi (omp)**, and **OpenCode** (via the [opencode-rules](https://github.com/frap129/opencode-rules) plugin).
 
 The whole pipeline — toolchain, environment, and tasks — is managed by
 [mise](https://mise.jdx.dev), so every collaborator and CI runner uses the
@@ -21,7 +21,7 @@ Every coding agent has its own rule format:
 | `antigravity` — Google Antigravity | YAML frontmatter with `trigger` | `.agents/rules/*.md` |
 | `piAgent` — pi-agent | Per-rule directory with `RULES.md` | `.pi/rules/<slug>/RULES.md` |
 | `ohMyPi` — oh-my-pi (omp) | Markdown with frontmatter | `.omp/rules/*.{md,mdc}` |
-| `opencode` — OpenCode | Markdown via [opencode-rules]("https://github.com/frap129/opencode-rules") plugin | `.opencode/rules/*.md` |
+| `opencode` — OpenCode | Markdown via [opencode-rules](https://github.com/frap129/opencode-rules) plugin | `.opencode/rules/*.md` |
 | `cursor` — Cursor | Markdown with `description` / `globs` / `alwaysApply` | `.cursor/rules/*.mdc` |
 | `claudeCode` — Claude Code | Markdown with `paths` for conditional loading | `.claude/rules/*.md` |
 
