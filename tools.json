@@ -7,13 +7,24 @@
       "format": "md-yaml-trigger",
       "installKind": "per-rule",
       "integrationPath": "{slug}.md",
-      "detect": { "dirs": [".agents", "~/.gemini"], "files": ["GEMINI.md", "AGENTS.md"] },
+      "detect": {
+        "dirs": [
+          ".agents",
+          "~/.gemini"
+        ],
+        "files": [
+          "GEMINI.md",
+          "AGENTS.md"
+        ]
+      },
       "dest": {
         "project": ".agents/rules/{slug}.md",
         "user": "~/.gemini/config/rules/{slug}.md"
       },
       "frontmatter": {
-        "required": ["trigger"],
+        "required": [
+          "trigger"
+        ],
         "map": {
           "trigger": "always_on|glob|model_decision|manual",
           "globs": "string",
@@ -27,13 +38,21 @@
       "format": "md-rules-dir",
       "installKind": "per-rule",
       "integrationPath": "{slug}/RULES.md",
-      "detect": { "dirs": [".pi", "~/.pi"] },
+      "detect": {
+        "dirs": [
+          ".pi",
+          "~/.pi"
+        ]
+      },
       "dest": {
         "project": ".pi/rules/{slug}/RULES.md",
         "user": "~/.pi/agent/rules/{slug}/RULES.md"
       },
       "frontmatter": {
-        "required": ["name", "description"],
+        "required": [
+          "name",
+          "description"
+        ],
         "map": {
           "name": "string",
           "description": "string",
@@ -47,13 +66,21 @@
       "format": "md-or-mdc",
       "installKind": "per-rule",
       "integrationPath": "{slug}.md",
-      "detect": { "dirs": [".omp", "~/.omp"] },
+      "detect": {
+        "dirs": [
+          ".omp",
+          "~/.omp"
+        ]
+      },
       "dest": {
         "project": ".omp/rules/{slug}.md",
         "user": "~/.omp/agent/rules/{slug}.md"
       },
       "frontmatter": {
-        "required": ["name", "description"],
+        "required": [
+          "name",
+          "description"
+        ],
         "map": {
           "name": "string",
           "description": "string",
@@ -61,7 +88,10 @@
           "alwaysApply": "boolean"
         }
       },
-      "extensions": [".md", ".mdc"]
+      "extensions": [
+        ".md",
+        ".mdc"
+      ]
     },
     "opencode": {
       "id": "opencode",
@@ -69,13 +99,20 @@
       "format": "md-plugin",
       "installKind": "per-rule",
       "integrationPath": "{slug}.md",
-      "detect": { "dirs": [".opencode", "~/.config/opencode"] },
+      "detect": {
+        "dirs": [
+          ".opencode",
+          "~/.config/opencode"
+        ]
+      },
       "dest": {
         "project": ".opencode/rules/{slug}.md",
         "user": "~/.config/opencode/rules/{slug}.md"
       },
       "frontmatter": {
-        "required": ["description"],
+        "required": [
+          "description"
+        ],
         "map": {
           "description": "string",
           "globs": "array<string>|string",
@@ -85,6 +122,62 @@
       "plugin": {
         "package": "opencode-rules",
         "entry": "opencode-rules@latest"
+      }
+    },
+    "cursor": {
+      "id": "cursor",
+      "label": "Cursor",
+      "format": "md-cursor-mdc",
+      "installKind": "per-rule",
+      "integrationPath": "{slug}.mdc",
+      "detect": {
+        "dirs": [
+          ".cursor",
+          "~/.cursor"
+        ]
+      },
+      "dest": {
+        "project": ".cursor/rules/{slug}.mdc",
+        "user": "~/.cursor/rules/{slug}.mdc"
+      },
+      "frontmatter": {
+        "required": [
+          "description"
+        ],
+        "map": {
+          "description": "string",
+          "globs": "string",
+          "alwaysApply": "boolean"
+        }
+      },
+      "extensions": [
+        ".mdc"
+      ]
+    },
+    "claudeCode": {
+      "id": "claudeCode",
+      "label": "Claude Code",
+      "format": "md-claude-rules",
+      "installKind": "per-rule",
+      "integrationPath": "{slug}.md",
+      "detect": {
+        "dirs": [
+          ".claude",
+          "~/.claude"
+        ],
+        "files": [
+          "CLAUDE.md"
+        ]
+      },
+      "dest": {
+        "project": ".claude/rules/{slug}.md",
+        "user": "~/.claude/rules/{slug}.md"
+      },
+      "frontmatter": {
+        "required": [],
+        "map": {
+          "paths": "array<string>"
+        }
       }
     }
   }

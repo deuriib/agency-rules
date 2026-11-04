@@ -57,6 +57,8 @@ test('harness ids are the agent tool ids', () => {
     // camelCase `id` values in agency-agents/tools.json.
     assert.deepEqual(Object.keys(tools.harnesses).sort(), [
         'antigravity',
+        'claudeCode',
+        'cursor',
         'ohMyPi',
         'opencode',
         'piAgent',

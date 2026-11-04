@@ -168,3 +168,5 @@ Include in the description:
 | `piAgent` | pi-agent | `md-rules-dir` | `per-rule` | `.pi/rules/<slug>/RULES.md` |
 | `ohMyPi` | oh-my-pi (omp) | `md-or-mdc` | `per-rule` | `.omp/rules/*.md` |
 | `opencode` | OpenCode | `md-plugin` | `per-rule` | `.opencode/rules/*.md` |
+| `cursor` | Cursor | `md-cursor-mdc` | `per-rule` | `.cursor/rules/*.mdc` |
+| `claudeCode` | Claude Code | `md-claude-rules` | `per-rule` | `.claude/rules/*.md` |
