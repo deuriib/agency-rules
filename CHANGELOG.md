@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0](https://github.com/deuriib/agency-rules/compare/v0.16.0...v0.17.0) (2026-11-04)
+
+
+### Features
+
+* **rules:** add LEG legal guidelines ([#87](https://github.com/deuriib/agency-rules/issues/87)) ([7b64d78](https://github.com/deuriib/agency-rules/commit/7b64d7825289a15d2b48d219447f097cf1f95065))
+
+
+### Bug Fixes
+
+* restore eval and make the CI gate actually gate ([#83](https://github.com/deuriib/agency-rules/issues/83)) ([c769123](https://github.com/deuriib/agency-rules/commit/c769123b00e6de71ef9d134e1d5980b95aa806ce))
+
 ## [0.16.0](https://github.com/deuriib/agency-rules/compare/v0.15.0...v0.16.0) (2026-11-04)
 
 
