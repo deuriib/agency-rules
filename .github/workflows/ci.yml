@@ -20,6 +20,9 @@ jobs:
       - name: Validate rules
         run: mise run validate
 
+      - name: Eval rule overlap
+        run: mise run eval
+
       - name: Check formatting and linting
         run: biome ci
 
