@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0](https://github.com/deuriib/agency-rules/compare/v0.10.0...v0.11.0) (2026-11-04)
+
+
+### Features
+
+* **rules:** add minimal-code rule ([5963f6c](https://github.com/deuriib/agency-rules/commit/5963f6cba6d123c30092dd0a6dbafb2cdc8f6718))
+
 ## [0.10.0](https://github.com/deuriib/agency-rules/compare/v0.9.0...v0.10.0) (2026-11-03)
 
 
