@@ -51,8 +51,7 @@ a checkbox, not a control.
 | Medium | 30 days |
 | Low | 90 days |
 
-- **Critical or High blocks merge and release** — the same gate stated in
-  `deny-hard-gates`.
+- **Critical or High gates the merge** (see `deny-hard-gates`).
 - **An accepted risk is time-bound**, with a named owner, a compensating
   control, and an expiry date. An open-ended acceptance is a finding you have
   chosen to keep.

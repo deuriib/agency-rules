@@ -36,6 +36,12 @@ run = "node bin/agency-rules.mjs new"
 description = "Validate each rule's frontmatter against the schema"
 run = "node bin/agency-rules.mjs validate"
 
+# ── Duplication eval ──────────────────────────────────────────────────
+[tasks.eval]
+description = "Score textual overlap between rules (fails above the gate)"
+run = "node bin/agency-rules.mjs eval"
+sources = ["rules/**/*.md", "scripts/lib/overlap.mjs"]
+
 # ── Conversion ────────────────────────────────────────────────────────
 [tasks.convert]
 description = "Compile rules/ into each harness's native format"
@@ -69,8 +75,8 @@ run = "node bin/agency-rules.mjs list"
 
 # ── CI composition ────────────────────────────────────────────────────
 [tasks.ci]
-description = "Full pipeline: validate → check → convert → test"
-depends = ["validate", "check", "convert", "test"]
+description = "Full pipeline: validate → eval → check → convert → test"
+depends = ["validate", "eval", "check", "convert", "test"]
 
 [tasks.release]
 description = "Trigger the release workflow on GitHub (requires gh CLI)"
