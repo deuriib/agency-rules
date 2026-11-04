@@ -122,6 +122,7 @@
       "plugin": {
         "package": "opencode-rules",
         "entry": "opencode-rules@latest",
+        "key": "plugins",
         "config": {
           "project": "opencode.json",
           "user": "~/.config/opencode/opencode.json"
