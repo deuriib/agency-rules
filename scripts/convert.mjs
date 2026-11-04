@@ -1,7 +1,8 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { defineCommand } from 'citty';
-import { readRulesOrExit } from './lib/cli-rules.mjs';
+import { readRulesOrExit, readToolsOrExit } from './lib/cli-rules.mjs';
+import { resolveIntegrationsDir, resolveRulesDir, resolveToolsPath } from './lib/paths.mjs';
 import { renderers } from './lib/renderers/index.mjs';
 import { substituteSlug } from './lib/slug-template.mjs';
 
@@ -22,22 +23,17 @@ export default defineCommand({
         const dryRun = args['dry-run'];
         const prefix = dryRun ? '  [dry-run]' : ' ';
 
-        const PACKAGE_ROOT = resolve(import.meta.dirname, '..');
-        const localRules = resolve(process.cwd(), 'rules');
-        const localTools = resolve(process.cwd(), 'tools.json');
+        const { dir: RULES_DIR } = resolveRulesDir();
+        const TOOLS_PATH = resolveToolsPath();
+        const INTEGRATIONS_DIR = resolveIntegrationsDir();
+        const requestedRules = args.rules
+            ? args.rules
+                  .split(',')
+                  .map((s) => s.trim())
+                  .filter(Boolean)
+            : null;
 
-        const RULES_DIR =
-            process.env.RULES_DIR ||
-            ((await import('node:fs').then((fs) => fs.existsSync(localRules)))
-                ? localRules
-                : resolve(PACKAGE_ROOT, 'rules'));
-        const TOOLS_PATH = (await import('node:fs').then((fs) => fs.existsSync(localTools)))
-            ? localTools
-            : resolve(PACKAGE_ROOT, 'tools.json');
-
-        const INTEGRATIONS_DIR = process.env.INTEGRATIONS_DIR || 'integrations';
-
-        const tools = JSON.parse(await readFile(TOOLS_PATH, 'utf8'));
+        const tools = await readToolsOrExit(TOOLS_PATH);
         const allRules = await readRulesOrExit(RULES_DIR);
 
         if (allRules.length === 0) {
@@ -59,8 +55,7 @@ export default defineCommand({
         }
 
         let targetRules = allRules;
-        if (args.rules) {
-            const requestedRules = args.rules.split(',').map((s) => s.trim());
+        if (requestedRules) {
             targetRules = allRules.filter((r) => requestedRules.includes(r.slug));
 
             const missingRules = requestedRules.filter(
@@ -80,18 +75,46 @@ export default defineCommand({
             `📚 Found ${targetRules.length} rule(s) in ${RULES_DIR}${dryRun ? ' (dry-run — nothing will be written)' : ''}\n`,
         );
 
+        if (requestedRules) {
+            console.log(
+                dryRun
+                    ? `⚠️  A real run with --rules would write a partial manifest: ${targetRules.length} rule(s) only, and \`install\` installs exactly what the manifest lists.\n`
+                    : `⚠️  Partial build: _manifest.json will list only these ${targetRules.length} rule(s), and \`install\` installs exactly what the manifest lists.\n` +
+                          '   Run `convert` without --rules for a full build before installing.\n',
+            );
+        }
+
         let totalFiles = 0;
+
+        // Validate every renderer before the first reset. Checked inside the loop,
+        // an unsupported format aborted the run after the harnesses already
+        // processed had been wiped and rewritten — a failed build that left the
+        // output half-old and half-new.
+        for (const id of targetHarnesses) {
+            const harness = tools.harnesses[id];
+            if (!renderers[harness.format]) {
+                console.error(`❌ No renderer for format "${harness.format}" (harness: ${id})`);
+                process.exit(1);
+            }
+        }
 
         for (const id of targetHarnesses) {
             const harness = tools.harnesses[id];
             const render = renderers[harness.format];
-            if (!render) {
-                console.error(`❌ No renderer for format "${harness.format}" (harness: ${id})`);
-                process.exit(1);
-            }
-
             const harnessDir = join(INTEGRATIONS_DIR, id);
             const manifest = [];
+
+            // Full reset before writing. `integrations/` is a gitignored build
+            // product, so an artifact whose rule was renamed or filtered out is
+            // stale output that nothing should install. Without the reset the
+            // directory kept orphans (and docs/ARCHITECTURE.md claimed a reset
+            // that never happened). A partial build therefore produces a partial
+            // directory, which the manifest's `partial` flag makes visible.
+            if (!dryRun) {
+                await rm(harnessDir, { recursive: true, force: true });
+            } else {
+                console.log(`${prefix} would reset ${harnessDir}/`);
+            }
 
             for (const rule of targetRules) {
                 let output;
@@ -120,6 +143,8 @@ export default defineCommand({
                         {
                             harness: id,
                             format: harness.format,
+                            partial: Boolean(requestedRules),
+                            filter: requestedRules,
                             files: manifest.map(({ slug, path }) => ({ slug, path })),
                         },
                         null,
