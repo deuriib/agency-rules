@@ -5,6 +5,7 @@ import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import { defineCommand } from 'citty';
 import { detectHarnesses, expandHome, pathExists } from './lib/detect.mjs';
+import { classifyInstall } from './lib/file-compare.mjs';
 import { parseSelection, pickByIndices, renderMenu } from './lib/selection.mjs';
 import { substituteSlug } from './lib/slug-template.mjs';
 
@@ -161,7 +162,9 @@ export default defineCommand({
             }
         }
 
-        let copied = 0;
+        let added = 0;
+        let updated = 0;
+        let unchanged = 0;
         let skippedHarnesses = 0;
         let pluginChanges = 0;
 
@@ -206,14 +209,30 @@ export default defineCommand({
 
             for (const { slug, path: relPath } of filesToCopy) {
                 const destPath = expandHome(substituteSlug(destTemplate, slug));
+                const srcPath = join(srcDir, relPath);
+
+                // Compare before copying: rewriting an identical file bumps its
+                // timestamp, and a harness watching its rules directory treats
+                // that as a change worth reloading.
+                const status = await classifyInstall(srcPath, destPath);
+
+                if (status === 'unchanged') {
+                    unchanged++;
+                    log(`${id}: ⏭️  unchanged (skipped) ${destPath}`);
+                    continue;
+                }
+
+                if (status === 'added') added++;
+                else updated++;
+
+                const verb = status === 'added' ? 'add' : 'update';
                 if (dryRun) {
-                    log(`${id}: would copy ${relPath} → ${destPath}`);
+                    log(`${id}: would ${verb} ${destPath}`);
                 } else {
                     await mkdir(dirname(destPath), { recursive: true });
-                    await copyFile(join(srcDir, relPath), destPath);
-                    log(`${id}: ${destPath}`);
+                    await copyFile(srcPath, destPath);
+                    log(`${id}: ${status === 'added' ? '🆕 added' : '🔄 updated'} ${destPath}`);
                 }
-                copied++;
             }
 
             if (harness.plugin && (!selectedRules || filesToCopy.length > 0)) {
@@ -222,12 +241,13 @@ export default defineCommand({
             }
         }
 
+        const harnessCount = targets.length - skippedHarnesses;
         console.log(
             dryRun
-                ? `\n🔎 Dry-run: would copy ${copied} file(s) across ${targets.length - skippedHarnesses} harness(es).` +
+                ? `\n🔎 Dry-run: would add ${added} file(s) and update ${updated} file(s). ${unchanged} file(s) unchanged across ${harnessCount} harness(es).` +
                       (pluginChanges ? ` Would update ${pluginChanges} plugin config(s).` : '') +
                       ' Nothing was written.'
-                : `\n🎉 Installed ${copied} file(s) across ${targets.length - skippedHarnesses} harness(es).` +
+                : `\n🎉 Installed ${added + updated} file(s) (${added} added, ${updated} updated) and skipped ${unchanged} unchanged file(s) across ${harnessCount} harness(es).` +
                       (pluginChanges ? ` Updated ${pluginChanges} plugin config(s).` : ''),
         );
 
