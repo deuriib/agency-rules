@@ -34,6 +34,9 @@ with a single command, driven by a declarative contract (`tools.json`).
 You can also use `agency-rules` directly via `npx` without cloning the repository:
 
 ```bash
+# Scaffold a new rule skeleton
+npx agency-rules new api-review --description "Use when reviewing REST endpoints, to catch missing validation."
+
 # Validate rules
 npx agency-rules validate
 
@@ -43,6 +46,10 @@ npx agency-rules convert
 # Install rules interactively
 npx agency-rules install
 ```
+
+`new` refuses a slug that already exists, a slug that is not kebab-case, and a
+missing `--description` — the description is the only field a harness can match
+on, so it cannot be generated as a placeholder.
 
 ---
 
