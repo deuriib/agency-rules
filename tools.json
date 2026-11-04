@@ -121,7 +121,11 @@
       },
       "plugin": {
         "package": "opencode-rules",
-        "entry": "opencode-rules@latest"
+        "entry": "opencode-rules@latest",
+        "config": {
+          "project": "opencode.json",
+          "user": "~/.config/opencode/opencode.json"
+        }
       }
     },
     "cursor": {
