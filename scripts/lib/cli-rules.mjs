@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { readRules } from './frontmatter.mjs';
 
 /**
@@ -18,7 +19,40 @@ export async function readRulesOrExit(dir) {
     try {
         return await readRules(dir);
     } catch (err) {
+        // A missing directory is user input (`RULES_DIR`), not a broken rule: say
+        // so instead of printing a raw `ENOENT: scandir '…'`.
+        if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+            console.error(`❌ Rules directory not found: ${dir}`);
+            console.error('   Set RULES_DIR to a directory containing rule Markdown.');
+            process.exit(1);
+        }
         console.error(`❌ ${err.message}`);
+        process.exit(1);
+    }
+}
+
+/**
+ * Read and parse `tools.json` for a command.
+ *
+ * `TOOLS_PATH` is an override, so a bad value is user input and deserves a
+ * message with the path in it rather than an ENOENT stack. Same contract as
+ * `readRulesOrExit`: print why, then exit 1.
+ *
+ * @param {string} toolsPath
+ * @returns {Promise<object>} never returns on failure
+ */
+export async function readToolsOrExit(toolsPath) {
+    try {
+        return JSON.parse(await readFile(toolsPath, 'utf8'));
+    } catch (err) {
+        const reason =
+            err.code === 'ENOENT'
+                ? 'file not found'
+                : err instanceof SyntaxError
+                  ? `invalid JSON: ${err.message}`
+                  : err.message;
+        console.error(`❌ Cannot read the harness contract at ${toolsPath} (${reason}).`);
+        console.error('   Run this from a repository containing tools.json, or set TOOLS_PATH.');
         process.exit(1);
     }
 }

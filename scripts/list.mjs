@@ -1,9 +1,7 @@
-import { existsSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import { defineCommand } from 'citty';
-import { readRulesOrExit } from './lib/cli-rules.mjs';
+import { readRulesOrExit, readToolsOrExit } from './lib/cli-rules.mjs';
 import { detectHarnesses } from './lib/detect.mjs';
+import { resolveIntegrationsDir, resolveRulesDir, resolveToolsPath } from './lib/paths.mjs';
 import { aggregateStatus, ruleStatus, STATUS_META } from './lib/status.mjs';
 
 const STATUS_ORDER_LABELS = ['synced', 'modified', 'missing', 'unbuilt'];
@@ -42,12 +40,8 @@ export default defineCommand({
         },
     },
     async run({ args }) {
-        const PACKAGE_ROOT = resolve(import.meta.dirname, '..');
-        const localRules = resolve(process.cwd(), 'rules');
-        const RULES_DIR =
-            process.env.RULES_DIR ||
-            (existsSync(localRules) ? localRules : resolve(PACKAGE_ROOT, 'rules'));
-        const INTEGRATIONS_DIR = process.env.INTEGRATIONS_DIR || 'integrations';
+        const { dir: RULES_DIR } = resolveRulesDir();
+        const INTEGRATIONS_DIR = resolveIntegrationsDir();
 
         const rules = await readRulesOrExit(RULES_DIR);
         if (rules.length === 0) {
@@ -61,11 +55,8 @@ export default defineCommand({
             process.exit(1);
         }
 
-        const localTools = resolve(process.cwd(), 'tools.json');
-        const TOOLS_PATH = existsSync(localTools)
-            ? localTools
-            : resolve(PACKAGE_ROOT, 'tools.json');
-        const tools = JSON.parse(await readFile(TOOLS_PATH, 'utf8'));
+        const localTools = resolveToolsPath();
+        const tools = await readToolsOrExit(localTools);
 
         let targets = [];
         if (args.status) {

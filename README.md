@@ -71,6 +71,10 @@ npx agency-rules eval --json           # machine-readable
 npx agency-rules eval --rule devops    # evidence for one rule
 ```
 
+Every mode gates on the same thing, so `--json` and `--rule` cannot report a
+defect and still exit 0: a contradiction fails `eval` whichever flag you ran it
+with, and `--rule` gates on that rule's own overlap share and contradictions.
+
 It splits each body into units (a bullet or a sentence), compares them on
 word-pair overlap, and reports the **share of a rule that already exists
 elsewhere**, per rule and per pair. The gate requires both a percentage and a
@@ -212,6 +216,14 @@ npx agency-rules install --harness cursor --scope project --rules typescript,go
 `🆕 added`, `🔄 updated`, or `⏭️ unchanged (skipped)`, and only the first two are
 written. An unchanged file keeps its mtime, which matters because a harness
 watching its rules directory treats a timestamp bump as a reload.
+
+Two cases that used to look like success now fail loudly: a `--rules` list that
+matches nothing in the compiled output, and an explicitly requested `--harness`
+whose `integrations/` does not exist. Both exit 1 instead of printing
+`🎉 Installed 0 file(s)`, and both are decided **before** anything is copied, so
+a failing run leaves your harness config untouched. `install` with **nothing
+auto-detected** is still a zero exit — that is a legitimate no-op — so read the
+output rather than trusting the status code alone.
 
 To see where you stand at any time:
 

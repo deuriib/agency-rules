@@ -1,11 +1,12 @@
-import { existsSync } from 'node:fs';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join } from 'node:path';
 import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import { defineCommand } from 'citty';
+import { readToolsOrExit } from './lib/cli-rules.mjs';
 import { detectHarnesses, expandHome, pathExists } from './lib/detect.mjs';
 import { classifyInstall } from './lib/file-compare.mjs';
+import { resolveFromCwd, resolveIntegrationsDir, resolveToolsPath } from './lib/paths.mjs';
 import { parseSelection, pickByIndices, renderMenu } from './lib/selection.mjs';
 import { substituteSlug } from './lib/slug-template.mjs';
 
@@ -41,20 +42,20 @@ export default defineCommand({
         const tag = dryRun ? '[dry-run]' : '     ';
         const log = (msg) => console.log(`  ${tag} ${msg}`);
 
-        const INTEGRATIONS_DIR = process.env.INTEGRATIONS_DIR || 'integrations';
+        const INTEGRATIONS_DIR = resolveIntegrationsDir();
+        const TOOLS_PATH = resolveToolsPath();
 
-        const PACKAGE_ROOT = resolve(import.meta.dirname, '..');
-        const localTools = resolve(process.cwd(), 'tools.json');
-        const TOOLS_PATH = existsSync(localTools)
-            ? localTools
-            : resolve(PACKAGE_ROOT, 'tools.json');
-
-        const tools = JSON.parse(await readFile(TOOLS_PATH, 'utf8'));
+        const tools = await readToolsOrExit(TOOLS_PATH);
 
         let finalScope = args.scope;
         let finalHarnesses = args.harness ? args.harness.split(',').map((s) => s.trim()) : null;
         let forceAll = args.all;
         const rulesToInstall = args.rules ? args.rules.split(',').map((s) => s.trim()) : null;
+
+        // Whether the fleet came from the user (flag or menu) or from detection.
+        // Only the wording of a failure depends on it, but "none of the detected
+        // harnesses" for a fleet the user picked by hand is a wrong hint.
+        let chosenExplicitly = Boolean(args.harness) || Boolean(args.all);
 
         // Interactive Mode
         if (input.isTTY && ((!finalHarnesses && !forceAll) || !finalScope)) {
@@ -76,6 +77,7 @@ export default defineCommand({
                 const nums = answers.map((a) => parseInt(a, 10)).filter((n) => !Number.isNaN(n));
 
                 if (nums.length > 0) {
+                    chosenExplicitly = true;
                     if (nums.includes(keys.length + 2)) {
                         forceAll = true;
                     } else {
@@ -132,13 +134,25 @@ export default defineCommand({
             `🔍 Targets: ${targets.join(', ')} (scope: ${finalScope})${dryRun ? ' — dry-run, no changes will be made' : ''}\n`,
         );
 
+        // Preflight: resolve every target's manifest and destination before the
+        // copy loop. Two things depend on the order:
+        //
+        // 1. Warnings about a target that cannot be installed — and about a
+        //    partial build — are emitted before the first `🆕 added` line, so a
+        //    user watching a long install sees the problem before it copies.
+        // 2. The failure check below can run before the loop, so a request that
+        //    cannot be fulfilled never half-installs a fleet.
+        const plan = await planInstall(targets, tools, finalScope, INTEGRATIONS_DIR);
+        const available = plan.filter((entry) => !entry.skipped);
+        const skipped = plan.length - available.length;
+
         // Rule selection happens after the harnesses are known, because the
         // candidate list comes from the manifests that will actually be copied.
         // Offering slugs from `rules/` instead would list rules that were never
         // compiled for the selected harness.
         let selectedRules = rulesToInstall;
-        if (input.isTTY && !selectedRules && targets.length > 0) {
-            const slugs = await collectAvailableSlugs(targets, INTEGRATIONS_DIR);
+        if (input.isTTY && !selectedRules) {
+            const slugs = slugsInPlan(available);
             if (slugs.length > 0) {
                 const rl = createInterface({ input, output });
                 console.log(renderMenu({ title: '📚 Select rules to install:', items: slugs }));
@@ -162,45 +176,69 @@ export default defineCommand({
             }
         }
 
-        let added = 0;
-        let updated = 0;
-        let unchanged = 0;
-        let skippedHarnesses = 0;
-        let pluginChanges = 0;
-
-        for (const id of targets) {
-            const harness = tools.harnesses[id];
-            const srcDir = join(INTEGRATIONS_DIR, id);
-
-            if (!(await pathExists(srcDir))) {
-                console.warn(
-                    `⚠️  ${id}: no compiled output at ${srcDir}, skipping. Run "mise run convert" first.`,
-                );
-                skippedHarnesses++;
-                continue;
-            }
-
-            const manifest = JSON.parse(await readFile(join(srcDir, '_manifest.json'), 'utf8'));
-            const destTemplate = harness.dest[finalScope];
-            if (!destTemplate) {
-                console.warn(`⚠️  ${id}: no dest for scope "${finalScope}"`);
-                skippedHarnesses++;
-                continue;
-            }
-
-            let filesToCopy = manifest.files;
+        const matchedSlugs = new Set();
+        for (const entry of available) {
+            entry.filesToCopy = entry.manifest.files;
             if (selectedRules) {
-                filesToCopy = manifest.files.filter((f) => selectedRules.includes(f.slug));
+                entry.filesToCopy = entry.manifest.files.filter((f) =>
+                    selectedRules.includes(f.slug),
+                );
 
                 // Warn if requested rules are missing from this specific harness manifest
-                const availableSlugs = manifest.files.map((f) => f.slug);
-                const missing = selectedRules.filter((slug) => !availableSlugs.includes(slug));
+                const availableSlugs = new Set(entry.manifest.files.map((f) => f.slug));
+                const missing = selectedRules.filter((slug) => !availableSlugs.has(slug));
                 if (missing.length > 0) {
                     console.warn(
-                        `⚠️  ${id}: The following requested rules were not found in the compiled output: ${missing.join(', ')}`,
+                        `⚠️  ${entry.id}: The following requested rules were not found in the compiled output: ${missing.join(', ')}`,
                     );
                 }
             }
+            for (const file of entry.filesToCopy) matchedSlugs.add(file.slug);
+        }
+
+        // Installing nothing is a failure whenever there was something to
+        // install. `install --rules typo` and a fleet whose `integrations/` was
+        // never built both used to print `🎉 Installed 0 file(s)` and exit 0 — a
+        // green CI step that installed nothing. Auto-detection finding no harness
+        // at all is the one legitimate no-op, and it exits earlier.
+        const failures = [];
+        if (selectedRules) {
+            const unmatched = selectedRules.filter((slug) => !matchedSlugs.has(slug));
+            if (unmatched.length === selectedRules.length) {
+                failures.push(
+                    `none of the requested rules exist in the compiled output: ${unmatched.join(', ')}`,
+                );
+            }
+        }
+        if (available.length === 0) {
+            const reasons = plan.map(
+                (entry) =>
+                    `${entry.id} (${
+                        entry.skipped === 'no-dest'
+                            ? `no dest for scope "${finalScope}" in tools.json`
+                            : 'no compiled output'
+                    })`,
+            );
+            const which = chosenExplicitly ? 'requested' : 'detected';
+            failures.push(
+                `none of the ${which} harnesses could be installed: ${reasons.join(', ')}`,
+            );
+        }
+        if (failures.length > 0) {
+            for (const failure of failures) console.error(`❌ ${failure}`);
+            console.error(
+                '   Run "agency-rules convert" (or "mise run convert" in this repository) without --rules to compile first.',
+            );
+            process.exit(1);
+        }
+
+        let added = 0;
+        let updated = 0;
+        let unchanged = 0;
+        let pluginChanges = 0;
+
+        for (const entry of available) {
+            const { id, harness, srcDir, destTemplate, filesToCopy } = entry;
 
             if (filesToCopy.length === 0) {
                 console.log(`  ${tag} ${id}: no matching rules to install.`);
@@ -235,50 +273,113 @@ export default defineCommand({
                 }
             }
 
-            if (harness.plugin && (!selectedRules || filesToCopy.length > 0)) {
+            if (harness.plugin) {
                 const changed = await handlePlugin(id, harness.plugin, finalScope, dryRun, log);
                 if (changed) pluginChanges++;
             }
         }
 
-        const harnessCount = targets.length - skippedHarnesses;
         console.log(
             dryRun
-                ? `\n🔎 Dry-run: would add ${added} file(s) and update ${updated} file(s). ${unchanged} file(s) unchanged across ${harnessCount} harness(es).` +
+                ? `\n🔎 Dry-run: would add ${added} file(s) and update ${updated} file(s). ${unchanged} file(s) unchanged across ${available.length} harness(es).` +
                       (pluginChanges ? ` Would update ${pluginChanges} plugin config(s).` : '') +
                       ' Nothing was written.'
-                : `\n🎉 Installed ${added + updated} file(s) (${added} added, ${updated} updated) and skipped ${unchanged} unchanged file(s) across ${harnessCount} harness(es).` +
+                : `\n🎉 Installed ${added + updated} file(s) (${added} added, ${updated} updated) and skipped ${unchanged} unchanged file(s) across ${available.length} harness(es).` +
                       (pluginChanges ? ` Updated ${pluginChanges} plugin config(s).` : ''),
         );
 
-        if (dryRun && skippedHarnesses > 0) {
-            console.log(
-                `\n⚠️  ${skippedHarnesses} harness(es) skipped due to missing integrations. Run "mise run convert" first.`,
-            );
+        if (skipped > 0) {
+            console.log(`\n⚠️  ${skipped} harness(es) skipped — see the warnings above.`);
         }
     },
 });
 
-async function collectAvailableSlugs(targets, integrationsDir) {
-    const slugs = new Set();
+/**
+ * Read every target's manifest and destination without touching the disk.
+ *
+ * A target that cannot be installed is recorded with a reason instead of being
+ * dropped, because the caller has to tell "no compiled output" apart from "this
+ * harness has no destination for this scope" when it reports the failure.
+ */
+async function planInstall(targets, tools, scope, integrationsDir) {
+    const entries = [];
+
     for (const id of targets) {
-        const manifestPath = join(integrationsDir, id, '_manifest.json');
-        if (!(await pathExists(manifestPath))) continue;
-        try {
-            const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-            for (const file of manifest.files ?? []) slugs.add(file.slug);
-        } catch {
-            // A malformed manifest is reported when the copy loop reaches it.
+        const harness = tools.harnesses[id];
+        const srcDir = join(integrationsDir, id);
+
+        if (!(await pathExists(srcDir))) {
+            console.warn(
+                `⚠️  ${id}: no compiled output at ${srcDir}, skipping. Run "agency-rules convert" first.`,
+            );
+            entries.push({ id, harness, skipped: 'no-output' });
+            continue;
         }
+
+        const destTemplate = harness.dest?.[scope];
+        if (!destTemplate) {
+            console.warn(`⚠️  ${id}: no dest for scope "${scope}" in tools.json, skipping.`);
+            entries.push({ id, harness, skipped: 'no-dest' });
+            continue;
+        }
+
+        const manifestPath = join(srcDir, '_manifest.json');
+        let manifest;
+        try {
+            manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+        } catch (err) {
+            // A directory with no manifest is what a `convert` killed halfway
+            // leaves behind, and a corrupt manifest is what a hand edit leaves.
+            // Either way the installer cannot know what to copy, and a raw
+            // SyntaxError stack says nothing about the fix.
+            const reason =
+                err.code === 'ENOENT'
+                    ? 'file not found'
+                    : err instanceof SyntaxError
+                      ? `invalid JSON: ${err.message}`
+                      : err.message;
+            console.error(`❌ ${id}: cannot read ${manifestPath} (${reason}).`);
+            console.error('   Run "agency-rules convert" to rebuild the compiled output.');
+            process.exit(1);
+        }
+
+        // Reported here, before the copy loop: a warning that arrives after a
+        // partial build has already been copied is a warning too late to act on.
+        if (manifest.partial) {
+            console.warn(
+                `⚠️  ${id}: compiled output is partial (\`_manifest.json\` has \`partial: true\`). ` +
+                    'Run a full "agency-rules convert" before installing, or the rules left out of the build stay stale.',
+            );
+        }
+
+        entries.push({ id, harness, srcDir, destTemplate, manifest, skipped: null });
+    }
+
+    return entries;
+}
+
+/** Union of every rule slug the selected harnesses have compiled. */
+function slugsInPlan(entries) {
+    const slugs = new Set();
+    for (const entry of entries) {
+        for (const file of entry.manifest.files ?? []) slugs.add(file.slug);
     }
     return [...slugs].sort();
 }
 
 async function handlePlugin(id, plugin, scope, dry, logFn) {
-    const configPath =
-        scope === 'user'
-            ? expandHome('~/.config/opencode/opencode.json')
-            : join(process.cwd(), 'opencode.json');
+    // The config path is contract data, not an assumption about OpenCode: a
+    // hardcoded `opencode.json` worked only while OpenCode was the one harness
+    // with a plugin, and would have written the wrong file for the next one.
+    const configTemplate = plugin.config?.[scope];
+    if (!configTemplate) {
+        console.warn(
+            `⚠️  ${id}: no plugin config path for scope "${scope}" in tools.json, skipping plugin registration`,
+        );
+        return false;
+    }
+
+    const configPath = resolveFromCwd(configTemplate);
 
     let config = {};
     let existed = false;

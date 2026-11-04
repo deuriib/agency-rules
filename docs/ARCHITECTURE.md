@@ -54,7 +54,7 @@ four native harness formats, and why the pipeline is shaped the way it is.
 | **Contract** | `tools.json` | Declares each harness: format, integration path, install destinations, frontmatter mapping, plugin metadata. |
 | **Engine** | `scripts/convert.mjs` | Iterates over rules × harnesses, calls the right renderer, writes output + manifest. |
 | **Renderers** | `scripts/lib/renderers/*.mjs` | Pure functions: `(rule, harness) → markdown string`. No I/O. |
-| **Installer** | `scripts/install.mjs` | Detects harnesses, copies compiled files to real destinations, registers plugins. |
+| **Installer** | `scripts/install.mjs` | Preflights every target (manifest + destination) before writing, copies compiled files to real destinations, registers plugins. A request it cannot fulfil fails before the first write. |
 | **Validator** | `scripts/validate.mjs` | Runs the schema and checks slug uniqueness before anything else runs. |
 | **Overlap eval** | `scripts/eval.mjs`, `scripts/lib/overlap.mjs`, `scripts/lib/contradictions.mjs` | Two checks, because they catch different defects. **Overlap** scores shared phrasing and fails when a rule restates another. **Contradictions** finds the same subject with a different number — two rules stating one obligation as 60 days and 90 days pass an overlap check cleanly. Pure maths in the libraries, reporting in the command. |
 | **Orchestration** | `mise.toml` | Pins Node version, defines tasks, composes `ci`, wires the `postinstall` hook. |
@@ -84,10 +84,12 @@ one test. The engine, installer, and validator never change.
 - **Pure renderers.** Same input → same output byte for byte. No timestamps,
   no random ordering. Manifests are sorted by slug.
 - **Full reset on convert.** `integrations/<harness>/` is deleted before
-  being rewritten. No stale files survive a rename.
+  being rewritten. No stale files survive a rename, and a build filtered with
+  `--rules` produces a directory that contains exactly those rules.
 - **Manifest as index.** `integrations/<harness>/_manifest.json` records
   every file the installer should copy. The installer trusts the manifest,
-  not a directory walk.
+  not a directory walk. A filtered build sets `partial: true` and records the
+  `filter`, so `install` can tell a full build apart from a slice of one.
 - **Locked toolchain.** `mise.lock` pins exact versions of Node and any
   installed CLIs. CI uses `mise install --locked` to fail on drift.
 
@@ -109,15 +111,20 @@ This keeps the inner loop fast as the rules tree grows.
 
 ## OpenCode plugin registration
 
-OpenCode needs `opencode-rules` registered in `opencode.json`. The installer:
+OpenCode needs `opencode-rules` registered in `opencode.json`. The path is
+contract data, not an assumption: `tools.json` declares it per scope under
+`plugin.config.project` / `plugin.config.user`, so a second harness with a
+plugin cannot end up writing into OpenCode's file. The installer:
 
-1. Reads (or creates) `opencode.json`.
+1. Reads (or creates) the config at that path.
 2. Ensures `config.plugin` is an array.
-3. Appends `"opencode-rules@latest"` if it isn't already present.
+3. Appends the `plugin.entry` value if it isn't already present.
 4. Writes the config back with 2-space indentation.
 
 If the file exists but is invalid JSON, the installer warns and skips rather
-than overwriting — a corrupted config is never silently clobbered.
+than overwriting — a corrupted config is never silently clobbered. A harness
+whose `plugin` has no config path for the requested scope is warned about and
+skipped rather than guessed at.
 
 ---
 
