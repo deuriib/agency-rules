@@ -2,7 +2,12 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineCommand } from 'citty';
 import { readRulesOrExit } from './lib/cli-rules.mjs';
-import { DEFAULT_MIN_UNIT_TOKENS, DEFAULT_UNIT_THRESHOLD, findViolations } from './lib/overlap.mjs';
+import {
+    compareRules,
+    DEFAULT_MIN_UNIT_TOKENS,
+    DEFAULT_UNIT_THRESHOLD,
+    findViolations,
+} from './lib/overlap.mjs';
 
 const GATE_THRESHOLD = 10;
 const GATE_MIN_UNITS = 2;
