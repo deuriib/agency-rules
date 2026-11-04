@@ -76,6 +76,24 @@ word-pair overlap, and reports the **share of a rule that already exists
 elsewhere**, per rule and per pair. The gate requires both a percentage and a
 minimum unit count, so one shared sentence in a small rule cannot fail a build.
 
+The same command also checks for **numeric contradictions** — two rules stating
+the same obligation with a different number, which is worse than duplication
+because a reader trusts whichever they saw first:
+
+```text
+❌ 1 numeric contradiction(s) — same subject, different number
+   87.5%  contracts [60|day] vs post-sale [90|day]
+          **No auto-renewal without review**, and the review runs in two ordered windows
+          **Auto-renewals are reviewed 90 days before expiry** — the commercial conversation
+```
+
+The subject of a claim is taken as the words around the number, not the whole
+sentence: two rules can state one obligation with completely different surrounding
+clauses. Output reports **how many claims were compared** alongside the result,
+because "no contradictions" means little without the denominator — the check is
+deliberately conservative and a contradiction phrased in unrelated vocabulary
+around the number will not be caught.
+
 ---
 
 ## Quick Start
