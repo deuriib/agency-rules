@@ -45,7 +45,7 @@
         ]
       },
       "dest": {
-        "project": ".pi/rules/{slug}/RULES.md",
+        "project": ".pi/agent/rules/{slug}/RULES.md",
         "user": "~/.pi/agent/rules/{slug}/RULES.md"
       },
       "frontmatter": {
