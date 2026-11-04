@@ -168,7 +168,7 @@ Include in the description:
 | Harness id | Product | `format` | `installKind` | Path |
 | --- | --- | --- | --- | --- |
 | `antigravity` | Google Antigravity | `md-yaml-trigger` | `per-rule` | `.agents/rules/*.md` |
-| `piAgent` | pi-agent | `md-rules-dir` | `per-rule` | `.pi/rules/<slug>/RULES.md` |
+| `piAgent` | pi-agent | `md-rules-dir` | `per-rule` | `.pi/agent/rules/<slug>/RULES.md` |
 | `ohMyPi` | oh-my-pi (omp) | `md-or-mdc` | `per-rule` | `.omp/rules/*.md` |
 | `opencode` | OpenCode | `md-plugin` | `per-rule` | `.opencode/rules/*.md` |
 | `cursor` | Cursor | `md-cursor-mdc` | `per-rule` | `.cursor/rules/*.mdc` |

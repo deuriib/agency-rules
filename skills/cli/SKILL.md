@@ -393,7 +393,7 @@ Pass these to `--harness`, and expect them in `tools.json`:
 | id | Label | `project` dest | `user` dest |
 | --- | --- | --- | --- |
 | `antigravity` | Google Antigravity | `.agents/rules/{slug}.md` | `~/.gemini/config/rules/{slug}.md` |
-| `piAgent` | Pi Coding Agent | `.pi/rules/{slug}/RULES.md` | `~/.pi/agent/rules/{slug}/RULES.md` |
+| `piAgent` | Pi Coding Agent | `.pi/agent/rules/{slug}/RULES.md` | `~/.pi/agent/rules/{slug}/RULES.md` |
 | `ohMyPi` | oh-my-pi (omp) | `.omp/rules/{slug}.md` | `~/.omp/agent/rules/{slug}.md` |
 | `opencode` | OpenCode (via opencode-rules) | `.opencode/rules/{slug}.md` | `~/.config/opencode/rules/{slug}.md` |
 | `cursor` | Cursor | `.cursor/rules/{slug}.mdc` | `~/.cursor/rules/{slug}.mdc` |

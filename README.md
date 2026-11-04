@@ -19,7 +19,7 @@ Every coding agent has its own rule format:
 | Harness (`--harness` id) | Format | Location |
 | --- | --- | --- |
 | `antigravity` — Google Antigravity | YAML frontmatter with `trigger` | `.agents/rules/*.md` |
-| `piAgent` — pi-agent | Per-rule directory with `RULES.md` | `.pi/rules/<slug>/RULES.md` |
+| `piAgent` — pi-agent | Per-rule directory with `RULES.md` | `.pi/agent/rules/<slug>/RULES.md` |
 | `ohMyPi` — oh-my-pi (omp) | Markdown with frontmatter | `.omp/rules/*.{md,mdc}` |
 | `opencode` — OpenCode | Markdown via [opencode-rules](https://github.com/frap129/opencode-rules) plugin | `.opencode/rules/*.md` |
 | `cursor` — Cursor | Markdown with `description` / `globs` / `alwaysApply` | `.cursor/rules/*.mdc` |
