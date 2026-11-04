@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.2](https://github.com/deuriib/agency-rules/compare/v0.14.1...v0.14.2) (2026-11-04)
+
+
+### Bug Fixes
+
+* **release:** treat a duplicate npm publish as success, not a failure ([#70](https://github.com/deuriib/agency-rules/issues/70)) ([2635bdc](https://github.com/deuriib/agency-rules/commit/2635bdcab7a9b798af793f4827dd6f93d1e9c7ab))
+
 ## [0.14.1](https://github.com/deuriib/agency-rules/compare/v0.14.0...v0.14.1) (2026-11-04)
 
 
