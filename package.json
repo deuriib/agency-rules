@@ -23,7 +23,7 @@
     "oh-my-pi"
   ],
   "bin": {
-    "agency-rules": "./bin/agency-rules.mjs"
+    "agency-rules": "bin/agency-rules.mjs"
   },
   "engines": {
     "node": ">=20.12"
