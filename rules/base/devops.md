@@ -1,11 +1,11 @@
 ---
-name: automation
+name: devops
 description: Use when adding or changing a CI pipeline, build job, deployment workflow, or scheduled automation, to keep every stage reproducible, gated, and reversible.
 trigger: model_decision
-tags: [base, automation, ci, delivery]
+tags: [base, devops, ci, delivery]
 ---
 
-# Automation
+# DevOps
 
 A pipeline is the only thing that runs the same way twice, and the only place a
 check can be trusted. Policy that already lives elsewhere is referenced here,
