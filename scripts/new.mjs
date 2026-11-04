@@ -1,10 +1,11 @@
 import { existsSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join } from 'node:path';
 import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import { defineCommand } from 'citty';
 import { readRulesOrExit } from './lib/cli-rules.mjs';
+import { resolveRulesDir } from './lib/paths.mjs';
 import { assertValidCategory, assertValidSlug, buildRuleSkeleton } from './lib/rule-template.mjs';
 
 export default defineCommand({
@@ -32,12 +33,15 @@ export default defineCommand({
         },
     },
     async run({ args }) {
-        const PACKAGE_ROOT = resolve(import.meta.dirname, '..');
-        const localRules = resolve(process.cwd(), 'rules');
-        const RULES_DIR =
-            process.env.RULES_DIR ||
-            (existsSync(localRules) ? localRules : resolve(PACKAGE_ROOT, 'rules'));
+        const { dir: RULES_DIR, source } = resolveRulesDir();
 
+        // A read-only command may fall back to the rules shipped in the package;
+        // a scaffolder may not. Writing a skeleton into an installed package
+        // (`node_modules/agency-rules/rules/…`) is a rule nobody will ever find
+        // again — refuse and say what to do instead.
+        //
+        // Checked after the slug and category are validated: a typo in the slug
+        // deserves the slug error, not a message about where the command ran.
         const slug = args.slug;
         const category = args.category || 'base';
 
@@ -46,6 +50,22 @@ export default defineCommand({
             assertValidCategory(category);
         } catch (err) {
             console.error(`❌ ${err.message}`);
+            process.exit(1);
+        }
+
+        if (source === 'package') {
+            console.error(`❌ No local rules/ directory in ${process.cwd()}`);
+            console.error(
+                '   Run this from the repository that owns the rules, or set RULES_DIR to one.',
+            );
+            process.exit(1);
+        }
+
+        // `RULES_DIR` is unvalidated user input, and `mkdir -p` would happily
+        // create the whole tree somewhere nobody is looking.
+        if (!existsSync(RULES_DIR)) {
+            console.error(`❌ RULES_DIR does not exist: ${RULES_DIR}`);
+            console.error('   Point it at a directory containing rule Markdown, or unset it.');
             process.exit(1);
         }
 

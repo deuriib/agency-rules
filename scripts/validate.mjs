@@ -1,8 +1,9 @@
 import { readFile } from 'node:fs/promises';
-import { basename, join, resolve } from 'node:path';
+import { basename, join } from 'node:path';
 import Ajv from 'ajv';
 import { defineCommand } from 'citty';
 import { readRules } from './lib/frontmatter.mjs';
+import { resolveRulesDir } from './lib/paths.mjs';
 import { dedupeErrors, formatAjvError } from './lib/schema-errors.mjs';
 
 export default defineCommand({
@@ -11,23 +12,52 @@ export default defineCommand({
         description: "Validate each rule's frontmatter against the schema",
     },
     async run() {
-        const PACKAGE_ROOT = resolve(import.meta.dirname, '..');
-        const localRules = resolve(process.cwd(), 'rules');
-        const RULES_DIR =
-            process.env.RULES_DIR || (localRules ? localRules : resolve(PACKAGE_ROOT, 'rules'));
+        const { dir: RULES_DIR } = resolveRulesDir();
+        const schemaPath = join(RULES_DIR, '_schema.json');
 
-        const schema = JSON.parse(await readFile(join(RULES_DIR, '_schema.json'), 'utf8'));
+        // `validate` is the command CI gates on, so a missing schema has to be a
+        // message rather than an ENOENT stack trace. It used to be the only
+        // command with no packaged fallback, which made it fail outside a
+        // checkout while its siblings worked from anywhere.
+        let schema;
+        try {
+            schema = JSON.parse(await readFile(schemaPath, 'utf8'));
+        } catch (err) {
+            const reason =
+                err.code === 'ENOENT'
+                    ? 'file not found'
+                    : err instanceof SyntaxError
+                      ? `invalid JSON: ${err.message}`
+                      : err.message;
+            console.error(`❌ Cannot read the rule schema at ${schemaPath} (${reason}).`);
+            console.error(
+                '   Run this from a repository containing rules/_schema.json, or set RULES_DIR.',
+            );
+            process.exit(1);
+        }
+
         const ajv = new Ajv({ allErrors: true, strict: false });
         const validate = ajv.compile(schema);
         const knownFields = Object.keys(schema.properties ?? {});
 
         // A YAML syntax error or a duplicate key throws instead of returning a
         // rule, so reading is per-file and a bad file must not abort the run.
+        // This guard covers an unreadable directory (permissions) — a *missing*
+        // one is already caught by the schema read above, which needs the same
+        // directory.
         const parseFailures = [];
         const rules = [];
-        for (const rule of await readRules(RULES_DIR, { onError: (e) => parseFailures.push(e) })) {
-            rules.push(rule);
+        let entries;
+        try {
+            entries = await readRules(RULES_DIR, { onError: (e) => parseFailures.push(e) });
+        } catch (err) {
+            console.error(`❌ Cannot read rules from ${RULES_DIR} (${err.code ?? 'error'}).`);
+            console.error(
+                '   Set RULES_DIR to a directory containing _schema.json and rule Markdown.',
+            );
+            process.exit(1);
         }
+        for (const rule of entries) rules.push(rule);
 
         if (rules.length === 0 && parseFailures.length === 0) {
             console.error(`❌ No rules found in ${RULES_DIR}`);
