@@ -32,8 +32,11 @@ onboarding and reported a year later.
 
 - **Renewals and expansions are forecast separately from new business.** Mixing
   them hides a shrinking base behind growing new sales.
-- **Auto-renewals are reviewed 90 days before expiry** — the point where the
-  customer can still be saved, not the week after the contract lapsed.
+- **Auto-renewals are reviewed 90 days before expiry** — the commercial
+  conversation, at the point where the customer can still be saved rather than the
+  week after the contract lapsed. The legal and contract review at 60 days is
+  `contracts`, and the two windows exist because they answer different questions:
+  whether to renew, and on what terms.
 - **The renewal conversation starts with usage evidence**, not with a renewal
   quote.
 
