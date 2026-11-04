@@ -52,7 +52,10 @@ Field checklist:
 - [ ] `dest.project` / `dest.user` — install destinations.
 - [ ] `frontmatter.required` — fields the harness cannot run without.
 - [ ] `frontmatter.map` — documentation of supported fields.
-- [ ] `plugin` — only if the harness needs a plugin registered.
+- [ ] `plugin` — only if the harness needs a plugin registered. It carries the
+      `entry` the installer appends AND the `config` path per scope
+      (`{ "project": "…", "user": "…" }`), because the installer derives the
+      config file from this contract rather than hardcoding one.
 
 ---
 
