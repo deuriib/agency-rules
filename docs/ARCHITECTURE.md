@@ -113,20 +113,32 @@ This keeps the inner loop fast as the rules tree grows.
 
 ## OpenCode plugin registration
 
-OpenCode needs `opencode-rules` registered in `opencode.json`. The path is
-contract data, not an assumption: `tools.json` declares it per scope under
-`plugin.config.project` / `plugin.config.user`, so a second harness with a
-plugin cannot end up writing into OpenCode's file. The installer:
+OpenCode needs `opencode-rules` registered in its config. Both the path and the
+key are contract data, not assumptions: `tools.json` declares them per scope
+under `plugin.config.project` / `plugin.config.user` and `plugin.key`
+(`plugins` — the schema deprecates `plugin`). The installer:
 
-1. Reads (or creates) the config at that path.
-2. Ensures `config.plugin` is an array.
-3. Appends the `plugin.entry` value if it isn't already present.
-4. Writes the config back with 2-space indentation.
+1. Looks for a config at the declared path, then at the same stem with the other
+   supported extension (`.json` / `.jsonc`), because both are the same config to
+   OpenCode. Creating the declared one beside an existing sibling would leave two
+   files claiming one role with no rule saying which wins.
+2. Reads it as strict JSON, falling back to JSONC. A file that is neither is
+   warned about and skipped — a corrupted config is never clobbered.
+3. Reports the entry as already registered when it appears under the declared key
+   or either legacy name (`plugins`, `plugin`), so a config written before the
+   deprecation does not receive a second copy.
+4. Appends to a strict-JSON config and writes it back with 2-space indentation.
+   A JSONC config is read but never rewritten: re-serializing it would drop every
+   comment and reformat what the user maintains by hand, so the installer names
+   the edit instead of performing a destructive one.
+5. Creates a config only when none exists at either extension — and, for
+   `project` scope, only when the user-scope config registers no plugins at all.
+   OpenCode merges its config sources and a later `plugins` array replaces the
+   earlier one for that key, so a project file created here would silently drop
+   every plugin the user registered globally.
 
-If the file exists but is invalid JSON, the installer warns and skips rather
-than overwriting — a corrupted config is never silently clobbered. A harness
-whose `plugin` has no config path for the requested scope is warned about and
-skipped rather than guessed at.
+A harness whose `plugin` has no config path, or no key, for the requested scope
+is warned about and skipped rather than guessed at.
 
 ---
 

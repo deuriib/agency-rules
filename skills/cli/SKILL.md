@@ -277,19 +277,27 @@ reported with its reason instead of being discovered halfway through the copy
 loop.
 
 **OpenCode plugin.** A harness with a `plugin` entry in `tools.json`
-(`opencode` → `opencode-rules@latest`) also gets that entry appended to the
-`plugin` array of the config file declared in `tools.json` at
+(`opencode` → `opencode-rules@latest`) also gets that entry appended to the array
+named by `plugin.key` (`plugins`) in the config file declared at
 `plugin.config[scope]` — currently `opencode.json` at the project root for
-`project` and `~/.config/opencode/opencode.json` for `user`. The path is contract
-data resolved relative to where you stand, not a hardcoded OpenCode assumption:
-a harness whose plugin has no config path for the requested scope is warned
-about (`no plugin config path for scope …`) and skipped, never guessed at. The
-file is created when absent, the rest of the JSON is preserved, and an entry
-already present is logged and left alone. A file that is not valid JSON is
-warned about and skipped — a corrupted config is never clobbered. When something
-changed, the summary gains `Updated N plugin config(s)`, or the dry-run wording
-`Would update N plugin config(s)`; an already-registered plugin contributes no
-count.
+`project` and `~/.config/opencode/opencode.json` for `user`. Path and key are
+contract data resolved relative to where you stand, not hardcoded OpenCode
+assumptions: a harness whose plugin has no config path or no key for the
+requested scope is warned about (`no plugin config path for scope …`) and
+skipped, never guessed at.
+
+The file is created when absent, the rest of the JSON is preserved, and an entry
+already present under `plugins` or the deprecated `plugin` is logged and left
+alone. A `.jsonc` beside the declared `.json` is the same config to OpenCode: it
+is read to decide whether the entry is there, never rewritten (that would drop
+its comments), and no second file is created beside it. A file that is neither
+JSON nor JSONC is warned about and skipped — a corrupted config is never
+clobbered. For `project` scope no config is created when the user-scope config
+already registers plugins, because OpenCode merges its sources and a project
+`plugins` array replaces the global one — creating it would drop them. When
+something changed, the summary gains `Updated N plugin config(s)`, or the
+dry-run wording `Would update N plugin config(s)`; an already-registered plugin
+contributes no count.
 
 **A partial manifest is flagged.** When a harness's `_manifest.json` has
 `partial: true`, the preflight warns — before anything is copied — that its
