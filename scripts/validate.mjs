@@ -1,8 +1,9 @@
 import { readFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import Ajv from 'ajv';
 import { defineCommand } from 'citty';
 import { readRules } from './lib/frontmatter.mjs';
+import { dedupeErrors, formatAjvError } from './lib/schema-errors.mjs';
 
 export default defineCommand({
     meta: {
@@ -18,47 +19,67 @@ export default defineCommand({
         const schema = JSON.parse(await readFile(join(RULES_DIR, '_schema.json'), 'utf8'));
         const ajv = new Ajv({ allErrors: true, strict: false });
         const validate = ajv.compile(schema);
+        const knownFields = Object.keys(schema.properties ?? {});
 
-        const rules = await readRules(RULES_DIR);
+        // A YAML syntax error or a duplicate key throws instead of returning a
+        // rule, so reading is per-file and a bad file must not abort the run.
+        const parseFailures = [];
+        const rules = [];
+        for (const rule of await readRules(RULES_DIR, { onError: (e) => parseFailures.push(e) })) {
+            rules.push(rule);
+        }
 
-        if (rules.length === 0) {
+        if (rules.length === 0 && parseFailures.length === 0) {
             console.error(`❌ No rules found in ${RULES_DIR}`);
             process.exit(1);
         }
 
-        const seen = new Set();
+        const seen = new Map();
         let failures = 0;
+
+        for (const failure of parseFailures) {
+            failures++;
+            console.error(`❌ ${failure.message}`);
+        }
 
         for (const rule of rules) {
             const errors = [];
 
-            if (seen.has(rule.slug)) {
-                errors.push({
-                    instancePath: '/name',
-                    message: `duplicate rule name "${rule.slug}"`,
-                });
+            const firstAt = seen.get(rule.slug);
+            if (firstAt) {
+                errors.push(`/name: duplicate rule name "${rule.slug}" (also in ${firstAt})`);
+            } else {
+                seen.set(rule.slug, rule.source);
             }
-            seen.add(rule.slug);
+
+            // `docs/RULE-SPEC.md` says the slug should equal the filename. Nothing
+            // enforced it, so a file could advertise a name that no other file
+            // matches and every reference to it would still resolve by filename.
+            const expected = basename(rule.source, '.md');
+            if (typeof rule.data?.name === 'string' && rule.data.name !== expected) {
+                errors.push(
+                    `/name: "${rule.data.name}" does not match the filename "${expected}.md" — rename one or the other`,
+                );
+            }
 
             if (!validate(rule.data)) {
-                for (const e of validate.errors ?? []) {
-                    errors.push(e);
+                for (const e of dedupeErrors(validate.errors ?? [])) {
+                    errors.push(formatAjvError(e, { knownFields }));
                 }
             }
 
             if (errors.length > 0) {
                 failures++;
                 console.error(`❌ ${rule.source}`);
-                for (const e of errors) {
-                    console.error(`   ${e.instancePath || '/'} ${e.message}`);
-                }
+                for (const line of errors) console.error(`   ${line}`);
             } else {
                 console.log(`✅ ${rule.source}`);
             }
         }
 
+        const total = rules.length + parseFailures.length;
         if (failures > 0) {
-            console.error(`\n💥 ${failures}/${rules.length} rule(s) failed validation.`);
+            console.error(`\n💥 ${failures}/${total} rule(s) failed validation.`);
             process.exit(1);
         }
 
