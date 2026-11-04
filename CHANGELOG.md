@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.4](https://github.com/deuriib/agency-rules/compare/v0.19.3...v0.19.4) (2026-11-04)
+
+
+### Bug Fixes
+
+* **tools:** point the piAgent project destination at .pi/agent/rules ([3568802](https://github.com/deuriib/agency-rules/commit/35688028f0a46a068945976ce59a80a8d21612ff))
+
 ## [0.19.3](https://github.com/deuriib/agency-rules/compare/v0.19.2...v0.19.3) (2026-11-04)
 
 
