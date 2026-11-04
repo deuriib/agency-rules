@@ -35,9 +35,9 @@ still be proud of.
 
 - **No bribe, kickback, or improper gift to a buyer, in any amount or any form** —
   cash, gift card, travel, sponsorship, or a favour to a relative.
-- **Gifts and hospitality are registered** with the recipient, the value, and the
-  reason, above the threshold policy sets. An unregistered gift is untraceable, and
-  untraceable is indistinguishable from improper.
+- **Gifts and hospitality go in the company register** — the record, its threshold,
+  and its review are owned by `integrity-and-screening`, because the obligation runs
+  wider than the sales team.
 - **Conflicts of interest are disclosed before the deal**: a relationship with the
   buyer, a side business that would benefit, a family interest. Disclosed late, a
   conflict reads as a cover-up even when it was innocent.
