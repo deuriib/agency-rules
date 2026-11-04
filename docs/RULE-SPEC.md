@@ -81,12 +81,16 @@ single string, which is the format Antigravity's YAML parser expects.
 
 ## Examples
 
+Every `description` below answers **when** to load the rule, never what it
+contains — that is the only thing harnesses can match on before the body is
+read.
+
 ### Always-on baseline
 
 ```markdown
 ---
 name: coding-standards
-description: Baseline rules applied to every edit regardless of file type.
+description: Use on every code edit, regardless of file type or language.
 alwaysApply: true
 tags: [base]
 ---
@@ -103,7 +107,7 @@ and pi-agent / OpenCode with just `name` + `description`.
 ```markdown
 ---
 name: typescript
-description: Mandatory rules for editing TypeScript and TSX files.
+description: Use when editing TypeScript or TSX source files, to keep typing strict.
 globs:
   - "**/*.ts"
   - "**/*.tsx"
@@ -122,7 +126,7 @@ oh-my-pi and OpenCode with the original array, pi-agent without `globs`.
 ```markdown
 ---
 name: api-review
-description: Use this rule when reviewing REST API endpoint definitions.
+description: Use when reviewing REST API endpoint definitions, to catch missing validation.
 ---
 
 # API Review

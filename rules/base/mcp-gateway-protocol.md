@@ -1,14 +1,16 @@
 ---
 name: mcp-gateway-protocol
-description: Apply this guidelines and strict rules for interacting with the Gateway MCP server.
+description: Use when calling any MCP tool through the Gateway, to discover the authoritative stub and invoke tools in the required order.
 alwaysApply: true
 tags: [mcp, gateway, tools]
 ---
 
+# MCP Gateway Protocol
 
-## MCP Rules — Gateway Protocol
+All MCP tools run via `gateway_*` helpers. Never guess a tool name or its
+parameters — the stub is authoritative.
 
-All MCP tools run via `gateway_*` helpers. **Mandatory order:**
+## Mandatory order
 
 1. `gateway_listToolFiles` — discover servers
 2. `gateway_readToolFile` — read `servers/<Name>.pyi` stub for exact tool names + params
@@ -18,7 +20,7 @@ All MCP tools run via `gateway_*` helpers. **Mandatory order:**
 
 > **Parallel:** Step 1 first. Steps 2-4 can run concurrently across servers/tools. Step 5 replaces N sequential step-4 calls with one round trip.
 
-### Calling Convention (Starlark)
+## Calling Convention (Starlark)
 
 ```python
 result = Server.tool(param=value, params....)
@@ -28,11 +30,11 @@ value = result["key"]  # brackets, not dot
 - Sync only, keyword args, no `try/except`, no classes, no imports.
 - Each `executeTool` scope is fresh — re-fetch or persist via MCP.
 
-### Anti-Patterns
+## Anti-Patterns
 
-| Anti-Pattern                        | Fix                                       |
-| :---------------------------------- | :---------------------------------------- |
-| Guessing tool names                 | Stub from `readToolFile` is authoritative |
-| Skipping `listToolFiles`            | Always discover first when unsure         |
-| `executeTool` or `callManyTool` before `readToolFile` | Confirm signature first                   |
-| Assuming cross-call state           | Every call is isolated                    |
+| Anti-Pattern | Fix |
+| :--- | :--- |
+| Guessing tool names | Stub from `readToolFile` is authoritative |
+| Skipping `listToolFiles` | Always discover first when unsure |
+| `executeTool` or `callManyTool` before `readToolFile` | Confirm signature first |
+| Assuming cross-call state | Every call is isolated |

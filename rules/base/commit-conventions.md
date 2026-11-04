@@ -1,6 +1,6 @@
 ---
 name: commit-conventions
-description: Enforce Conventional Commits format for all git commit messages.
+description: Use when writing, amending, or reviewing a git commit message, to choose the right type, scope, and subject line.
 alwaysApply: true
 tags: [git, commits, conventional-commits]
 ---
@@ -12,23 +12,34 @@ This is strictly required because automated release tooling (like `release-pleas
 
 ## Format
 
-```
+```text
 <type>(<optional scope>): <subject>
 ```
 
-- **type**: Must be one of the following:
-  - `feat`: A new feature (triggers a MINOR version bump).
-  - `fix`: A bug fix (triggers a PATCH version bump).
-  - `docs`: Documentation only changes.
-  - `style`: Changes that do not affect the meaning of the code (white-space, formatting, etc).
-  - `refactor`: A code change that neither fixes a bug nor adds a feature.
-  - `perf`: A code change that improves performance.
-  - `test`: Adding missing tests or correcting existing tests.
-  - `build`: Changes that affect the build system or external dependencies.
-  - `ci`: Changes to CI configuration files and scripts.
-  - `chore`: Other changes that don't modify src or test files.
-- **scope** (optional): A noun describing a section of the codebase (e.g., `rules`, `convert`, `harness`, `docs`).
-- **subject**: A short description in the imperative mood (e.g., "add", not "added").
+### Type
+
+Must be one of the following:
+
+| Type | Intent | Release impact |
+| --- | --- | --- |
+| `feat` | A new feature | MINOR bump |
+| `fix` | A bug fix | PATCH bump |
+| `docs` | Documentation only changes | none |
+| `style` | Changes that do not affect the meaning of the code (white-space, formatting, etc) | none |
+| `refactor` | A code change that neither fixes a bug nor adds a feature | none |
+| `perf` | A code change that improves performance | none |
+| `test` | Adding missing tests or correcting existing tests | none |
+| `build` | Changes that affect the build system or external dependencies | none |
+| `ci` | Changes to CI configuration files and scripts | none |
+| `chore` | Other changes that don't modify src or test files | none |
+
+### Scope
+
+Optional noun describing a section of the codebase (e.g., `rules`, `convert`, `harness`, `docs`).
+
+### Subject
+
+A short description in the imperative mood (e.g., "add", not "added").
 
 ## Rules
 
