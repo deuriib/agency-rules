@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.5](https://github.com/deuriib/agency-rules/compare/v0.19.4...v0.19.5) (2026-11-04)
+
+
+### Bug Fixes
+
+* **install:** register the plugin in the current key, without a shadowing config ([aa830ad](https://github.com/deuriib/agency-rules/commit/aa830add6f92ad49919ddeec51bf9683a0220661))
+
 ## [0.19.4](https://github.com/deuriib/agency-rules/compare/v0.19.3...v0.19.4) (2026-11-04)
 
 
