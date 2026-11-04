@@ -1,5 +1,3 @@
-import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { defineCommand } from 'citty';
 import { readRulesOrExit } from './lib/cli-rules.mjs';
 import { findContradictions } from './lib/contradictions.mjs';
@@ -9,6 +7,7 @@ import {
     DEFAULT_UNIT_THRESHOLD,
     findViolations,
 } from './lib/overlap.mjs';
+import { resolveRulesDir } from './lib/paths.mjs';
 
 const GATE_THRESHOLD = 10;
 const GATE_MIN_UNITS = 2;
@@ -56,11 +55,7 @@ export default defineCommand({
         const minTokens = num(args['min-tokens'], DEFAULT_MIN_UNIT_TOKENS);
         const top = num(args.top, 10);
 
-        const PACKAGE_ROOT = resolve(import.meta.dirname, '..');
-        const localRules = resolve(process.cwd(), 'rules');
-        const RULES_DIR =
-            process.env.RULES_DIR ||
-            (existsSync(localRules) ? localRules : resolve(PACKAGE_ROOT, 'rules'));
+        const { dir: RULES_DIR } = resolveRulesDir();
 
         const rules = await readRulesOrExit(RULES_DIR);
         const { perRule, duplicates } = compareRules(rules, { unitThreshold, minTokens });
@@ -85,6 +80,24 @@ export default defineCommand({
             process.exit(1);
         }
 
+        // One gate for every output mode.
+        //
+        // `--json` used to exit on overlap violations only while text mode also
+        // exited on contradictions, so a CI job running `eval --json` passed with
+        // contradictory numbers in the payload. `--rule` used to return before
+        // either check ran, so it could never fail at all. Both are the same
+        // defect: a mode that reports a problem and does not gate on it.
+        const scopeOf = (contradiction) =>
+            !args.rule ||
+            contradiction.fromRule === args.rule ||
+            contradiction.intoRule === args.rule;
+
+        const gatedViolations = args.rule
+            ? violations.filter((rule) => rule.slug === args.rule)
+            : violations;
+        const gatedContradictions = contradictionResult.contradictions.filter(scopeOf);
+        const gateFailed = gatedViolations.length > 0 || gatedContradictions.length > 0;
+
         if (args.json) {
             console.log(
                 JSON.stringify(
@@ -93,9 +106,10 @@ export default defineCommand({
                         threshold,
                         minUnits,
                         unitThreshold,
-                        violations: violations.length,
+                        scopedTo: args.rule ?? null,
+                        violations: gatedViolations.length,
                         numericClaims: contradictionResult.claims,
-                        contradictions: contradictionResult.contradictions,
+                        contradictions: gatedContradictions,
                         perRule,
                         duplicates,
                     },
@@ -103,7 +117,7 @@ export default defineCommand({
                     2,
                 ),
             );
-            process.exit(violations.length > 0 ? 1 : 0);
+            process.exit(gateFailed ? 1 : 0);
         }
 
         const totalUnits = perRule.reduce((sum, rule) => sum + rule.units, 0);
@@ -117,9 +131,11 @@ export default defineCommand({
             `${C.dim}   Gate: ≥${threshold}% of a rule's units restated, and ≥${minUnits} units.${C.reset}\n`,
         );
 
-        if (violations.length > 0) {
-            console.log(`${C.red}❌ ${violations.length} rule(s) restate another rule${C.reset}\n`);
-            for (const rule of violations) {
+        if (gatedViolations.length > 0) {
+            console.log(
+                `${C.red}❌ ${gatedViolations.length} rule(s) restate another rule${C.reset}\n`,
+            );
+            for (const rule of gatedViolations) {
                 console.log(
                     `  ${C.red}${String(rule.maxContainmentPercent).padStart(5)}%${C.reset}  ${C.bold}${rule.slug}${C.reset} ${C.dim}← ${rule.closestRule} (${rule.duplicatedUnits}/${rule.units} units)${C.reset}`,
                 );
@@ -141,27 +157,26 @@ export default defineCommand({
                 console.log(`      ${d.unit}`);
             }
             console.log('');
-            return;
+        } else {
+            console.log(`${C.bold}Highest share per rule${C.reset}`);
+            for (const rule of scoped.slice(0, top)) {
+                const mark =
+                    rule.duplicatedUnits >= minUnits && rule.maxContainmentPercent >= threshold
+                        ? `${C.red}✗${C.reset}`
+                        : `${C.dim}·${C.reset}`;
+                const other = rule.closestRule ?? '—';
+                console.log(
+                    `  ${mark} ${String(rule.maxContainmentPercent).padStart(5)}%  ${C.cyan}${rule.slug.padEnd(24)}${C.reset} ${C.dim}← ${other.padEnd(22)} (${rule.duplicatedUnits}/${rule.units} units)${C.reset}`,
+                );
+            }
         }
 
-        console.log(`${C.bold}Highest share per rule${C.reset}`);
-        for (const rule of scoped.slice(0, top)) {
-            const mark =
-                rule.duplicatedUnits >= minUnits && rule.maxContainmentPercent >= threshold
-                    ? `${C.red}✗${C.reset}`
-                    : `${C.dim}·${C.reset}`;
-            const other = rule.closestRule ?? '—';
+        const { claims } = contradictionResult;
+        if (gatedContradictions.length > 0) {
             console.log(
-                `  ${mark} ${String(rule.maxContainmentPercent).padStart(5)}%  ${C.cyan}${rule.slug.padEnd(24)}${C.reset} ${C.dim}← ${other.padEnd(22)} (${rule.duplicatedUnits}/${rule.units} units)${C.reset}`,
+                `${C.red}❌ ${gatedContradictions.length} numeric contradiction(s)${C.reset} ${C.dim}— same subject, different number${C.reset}\n`,
             );
-        }
-
-        const { claims, contradictions } = contradictionResult;
-        if (contradictions.length > 0) {
-            console.log(
-                `${C.red}❌ ${contradictions.length} numeric contradiction(s)${C.reset} ${C.dim}— same subject, different number${C.reset}\n`,
-            );
-            for (const c of contradictions) {
+            for (const c of gatedContradictions) {
                 console.log(
                     `  ${C.red}${String(c.subject).padStart(5)}%${C.reset}  ${C.bold}${c.fromRule}${C.reset} ${C.yellow}[${c.fromValues.join(', ')}]${C.reset} ${C.dim}vs${C.reset} ${C.bold}${c.intoRule}${C.reset} ${C.yellow}[${c.intoValues.join(', ')}]${C.reset}`,
                 );
@@ -170,8 +185,9 @@ export default defineCommand({
             }
             console.log('');
         } else {
+            const about = args.rule ? ` involving ${args.rule}` : '';
             console.log(
-                `${C.green}✅ No numeric contradictions${C.reset} ${C.dim}— ${claims} numeric claim(s) compared (${contradictionResult.compared} subject match(es))${C.reset}\n`,
+                `${C.green}✅ No numeric contradictions${about}${C.reset} ${C.dim}— ${claims} numeric claim(s) compared (${contradictionResult.compared} subject match(es))${C.reset}\n`,
             );
         }
 
@@ -188,9 +204,7 @@ export default defineCommand({
         }
 
         console.log('');
-        process.exit(
-            violations.length > 0 || contradictionResult.contradictions.length > 0 ? 1 : 0,
-        );
+        process.exit(gateFailed ? 1 : 0);
     },
 });
 
