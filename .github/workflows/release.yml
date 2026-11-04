@@ -27,7 +27,12 @@ jobs:
 
   publish-npm:
     needs: release-please
-    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    # Not gated on `release_created`: that output stays empty when the release is
+    # created during a different run, and release-please can fail after the
+    # release commit already landed. A gate silently skipped this job both times
+    # (0.9.0, 0.10.0), so the release never reached npm. The publish step below
+    # is idempotent instead, which covers every one of those cases.
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     environment: npm
     permissions:
@@ -53,4 +58,12 @@ jobs:
             sed -i '/_authToken/d' "$NPMRC_PATH"
           fi
 
-      - run: npm publish --access public
+      - name: Publish to npm unless the version already exists
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          if npm view "agency-rules@${version}" version >/dev/null 2>&1; then
+            echo "agency-rules@${version} is already published — nothing to do."
+            exit 0
+          fi
+          npm publish --access public
