@@ -388,31 +388,192 @@ test('install names a missing destination as the reason, not a missing build', a
     assert.match(run.stderr, /no dest for scope "user"/);
 });
 
-test('install registers the plugin at the config path declared in tools.json', async () => {
-    const dir = await tempDir();
+/**
+ * A compiled opencode fixture plus a tools.json whose plugin paths point inside
+ * the temporary tree.
+ *
+ * The real user path is never consulted: a developer with a global OpenCode
+ * config would otherwise change what these tests assert, and the project-scope
+ * check reads the user config on purpose.
+ */
+async function pluginFixture({
+    projectConfig,
+    userConfig,
+    plugin = {},
+    projectPath = 'opencode.json',
+} = {}) {
+    const build = await tempDir();
     const project = await tempDir('agency-rules-install-');
-    const integrations = join(dir, 'integrations');
+    const user = await tempDir('agency-rules-user-');
+    const integrations = join(build, 'integrations');
+
     await runCli(['convert', '--harness', 'opencode', '--rules', 'typescript'], {
-        cwd: dir,
+        cwd: build,
         env: { INTEGRATIONS_DIR: integrations },
     });
 
+    const tools = JSON.parse(await readFile(join(ROOT, 'tools.json'), 'utf8'));
+    Object.assign(tools.harnesses.opencode.plugin, plugin);
+    tools.harnesses.opencode.plugin.config = {
+        project: projectPath,
+        user: join(user, 'opencode.json'),
+    };
+    const toolsPath = join(build, 'tools.json');
+    await writeFile(toolsPath, JSON.stringify(tools));
+
+    for (const [name, body] of Object.entries(projectConfig ?? {})) {
+        await writeFile(join(project, name), body);
+    }
+    for (const [name, body] of Object.entries(userConfig ?? {})) {
+        await writeFile(join(user, name), body);
+    }
+
+    const install = () =>
+        runCli(
+            ['install', '--harness', 'opencode', '--scope', 'project', '--rules', 'typescript'],
+            {
+                cwd: project,
+                env: { INTEGRATIONS_DIR: integrations, TOOLS_PATH: toolsPath },
+            },
+        );
+
+    return { project, install };
+}
+
+test('install registers the plugin under the contract key, not the deprecated one', async () => {
+    const { project, install } = await pluginFixture();
+    const run = await install();
+    assert.equal(run.code, 0, run.stderr);
+
+    const config = JSON.parse(await readFile(join(project, 'opencode.json'), 'utf8'));
+    assert.deepEqual(config.plugins, ['opencode-rules@latest']);
+    // `plugin` is deprecated in OpenCode's schema; writing it is the bug.
+    assert.equal(config.plugin, undefined, 'must not write the deprecated key');
+});
+
+test('install uses the plugin key declared in tools.json', async () => {
+    const { project, install } = await pluginFixture({ plugin: { key: 'pluginList' } });
+    const run = await install();
+    assert.equal(run.code, 0, run.stderr);
+
+    const config = JSON.parse(await readFile(join(project, 'opencode.json'), 'utf8'));
+    assert.deepEqual(config.pluginList, ['opencode-rules@latest']);
+    assert.equal(config.plugins, undefined, 'the hardcoded key must not be used');
+});
+
+test('install appends to an existing project config and preserves its other keys', async () => {
+    const { project, install } = await pluginFixture({
+        projectConfig: {
+            'opencode.json': JSON.stringify({ model: 'anthropic/x', plugins: ['other@1'] }),
+        },
+    });
+    const run = await install();
+    assert.equal(run.code, 0, run.stderr);
+
+    const config = JSON.parse(await readFile(join(project, 'opencode.json'), 'utf8'));
+    assert.equal(config.model, 'anthropic/x');
+    assert.deepEqual(config.plugins, ['other@1', 'opencode-rules@latest']);
+});
+
+test('install treats the deprecated plugin key as already registered', async () => {
+    const { project, install } = await pluginFixture({
+        projectConfig: { 'opencode.json': JSON.stringify({ plugin: ['opencode-rules@latest'] }) },
+    });
+    const run = await install();
+    assert.equal(run.code, 0, run.stderr);
+    assert.match(run.stdout, /already registered/);
+
+    const config = JSON.parse(await readFile(join(project, 'opencode.json'), 'utf8'));
+    assert.equal(config.plugins, undefined, 'must not add a second copy under the new key');
+});
+
+test('install does not create a parallel config beside an existing JSONC one', async () => {
+    const jsonc = '{\n  // hand-maintained\n  "plugins": ["other@1"],\n}\n';
+    const { project, install } = await pluginFixture({
+        projectConfig: { 'opencode.jsonc': jsonc },
+    });
+    const run = await install();
+    assert.equal(run.code, 0, run.stderr);
+
+    await assert.rejects(
+        stat(join(project, 'opencode.json')),
+        'a second config claiming the same role must not be created',
+    );
+    assert.equal(
+        await readFile(join(project, 'opencode.jsonc'), 'utf8'),
+        jsonc,
+        'JSONC is not rewritten',
+    );
+    assert.match(run.stderr, /JSONC/);
+    assert.match(run.stderr, /opencode-rules@latest/);
+});
+
+test('install reports a JSONC config that already registers the plugin, untouched', async () => {
+    const jsonc = '{\n  // comment\n  "plugins": ["opencode-rules@latest"],\n}\n';
+    const { project, install } = await pluginFixture({
+        projectConfig: { 'opencode.jsonc': jsonc },
+    });
+    const run = await install();
+    assert.equal(run.code, 0, run.stderr);
+    assert.match(run.stdout, /already registered/);
+
+    await assert.rejects(stat(join(project, 'opencode.json')));
+    assert.equal(await readFile(join(project, 'opencode.jsonc'), 'utf8'), jsonc);
+});
+
+test('install does not create a project config when the user config registers the plugin', async () => {
+    const { project, install } = await pluginFixture({
+        userConfig: { 'opencode.json': JSON.stringify({ plugins: ['opencode-rules@latest'] }) },
+    });
+    const run = await install();
+    assert.equal(run.code, 0, run.stderr);
+
+    // OpenCode merges configs and a project `plugins` array replaces the global
+    // one, so creating this file would drop the global registration.
+    await assert.rejects(stat(join(project, 'opencode.json')));
+    assert.match(run.stdout, /already registered/);
+});
+
+test('install does not create a project config when a JSONC user config registers the plugin', async () => {
+    // The real-world shape: the global config is `opencode.jsonc`, so testing
+    // only the declared `.json` misses it and creates the very file this branch
+    // exists to avoid.
+    const { project, install } = await pluginFixture({
+        userConfig: {
+            'opencode.jsonc': '{\n  // global\n  "plugins": ["opencode-rules@latest"],\n}\n',
+        },
+    });
+    const run = await install();
+    assert.equal(run.code, 0, run.stderr);
+
+    await assert.rejects(stat(join(project, 'opencode.json')));
+    assert.match(run.stdout, /already registered/);
+    assert.match(run.stdout, /opencode\.jsonc/);
+});
+
+test('install refuses to shadow other globally registered plugins', async () => {
+    const { project, install } = await pluginFixture({
+        userConfig: {
+            'opencode.json': JSON.stringify({ plugins: ['@upstash/context7-opencode@latest'] }),
+        },
+    });
+    const run = await install();
+    assert.equal(run.code, 0, run.stderr);
+
+    await assert.rejects(stat(join(project, 'opencode.json')));
+    assert.match(run.stderr, /would replace them/);
+});
+
+test('install registers the plugin at the config path declared in tools.json', async () => {
     // The path must come from the contract, so the fixture renames it: asserting
     // the literal `opencode.json` would also pass with the hardcoded path this
     // fix removed, which is a test that cannot fail.
-    const tools = JSON.parse(await readFile(join(ROOT, 'tools.json'), 'utf8'));
-    tools.harnesses.opencode.plugin.config.project = 'custom-plugin.json';
-    const toolsPath = join(project, 'tools.json');
-    await writeFile(toolsPath, JSON.stringify(tools));
-
-    const run = await runCli(
-        ['install', '--harness', 'opencode', '--scope', 'project', '--rules', 'typescript'],
-        { cwd: project, env: { INTEGRATIONS_DIR: integrations, TOOLS_PATH: toolsPath } },
-    );
+    const { project, install } = await pluginFixture({ projectPath: 'custom-plugin.json' });
+    const run = await install();
     assert.equal(run.code, 0, run.stderr);
 
     const config = JSON.parse(await readFile(join(project, 'custom-plugin.json'), 'utf8'));
-    assert.deepEqual(config.plugin, ['opencode-rules@latest']);
+    assert.deepEqual(config.plugins, ['opencode-rules@latest']);
     await assert.rejects(stat(join(project, 'opencode.json')), 'must not write the old path');
 });
 
@@ -425,5 +586,9 @@ test('every harness with a plugin declares both config paths in tools.json', asy
         assert.ok(harness.plugin.config?.project, `${id}: missing plugin.config.project`);
         assert.ok(harness.plugin.config?.user, `${id}: missing plugin.config.user`);
         assert.ok(harness.plugin.entry, `${id}: missing plugin.entry`);
+        // The key is contract data for the same reason the path is: `plugin` was
+        // deprecated in favour of `plugins`, and a hardcoded key kept writing
+        // the dead one long after the schema moved on.
+        assert.ok(harness.plugin.key, `${id}: missing plugin.key`);
     }
 });
