@@ -6,6 +6,7 @@ import { defineCommand } from 'citty';
 import { readToolsOrExit } from './lib/cli-rules.mjs';
 import { detectHarnesses, expandHome, pathExists } from './lib/detect.mjs';
 import { classifyInstall } from './lib/file-compare.mjs';
+import { parseJsonc } from './lib/jsonc.mjs';
 import { resolveFromCwd, resolveIntegrationsDir, resolveToolsPath } from './lib/paths.mjs';
 import { parseSelection, pickByIndices, renderMenu } from './lib/selection.mjs';
 import { substituteSlug } from './lib/slug-template.mjs';
@@ -383,10 +384,85 @@ function slugsInPlan(entries) {
     return [...slugs].sort();
 }
 
+/** Config files OpenCode reads for the same stem, in preference order. */
+function configCandidates(configPath) {
+    const slash = configPath.lastIndexOf('/');
+    const dot = configPath.lastIndexOf('.');
+    const stem = dot > slash ? configPath.slice(0, dot) : configPath;
+    const candidates = [configPath];
+    for (const ext of ['.json', '.jsonc']) {
+        const candidate = `${stem}${ext}`;
+        if (!candidates.includes(candidate)) candidates.push(candidate);
+    }
+    return candidates;
+}
+
+/** The first config OpenCode would read for this path, or null. */
+async function findExistingConfig(configPath) {
+    for (const candidate of configCandidates(configPath)) {
+        if (await pathExists(candidate)) return candidate;
+    }
+    return null;
+}
+
+/**
+ * The declared key first, then the names it replaced.
+ *
+ * OpenCode's schema deprecates `plugin` in favour of `plugins`, and a config
+ * written before that change still registers the same package. Reading both is
+ * what stops the installer appending a second copy of an entry already there
+ * under the old name.
+ */
+function pluginKeys(key) {
+    return [...new Set([key, 'plugins', 'plugin'])];
+}
+
+/** Whether `entry` is in any of `keys`, as a bare string or an EntryEncoded object. */
+function declaresEntry(config, keys, entry) {
+    for (const key of keys) {
+        const list = config?.[key];
+        if (!Array.isArray(list)) continue;
+        for (const item of list) {
+            const name = typeof item === 'string' ? item : item?.package;
+            if (name === entry) return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Parse a config file as strict JSON, falling back to JSONC.
+ *
+ * `editable` says whether the file can be written back without destroying it:
+ * only strict JSON can, because re-serializing JSONC drops every comment and
+ * reformats what the user maintains by hand.
+ */
+async function readConfig(path) {
+    const text = await readFile(path, 'utf8');
+    try {
+        return { config: JSON.parse(text), editable: true };
+    } catch {
+        try {
+            return { config: parseJsonc(text), editable: false };
+        } catch {
+            return null;
+        }
+    }
+}
+
+/** The plugin list a config actually uses, preferring the declared key. */
+function existingPluginList(config, keys) {
+    for (const key of keys) {
+        if (Array.isArray(config?.[key])) return { key, list: config[key] };
+    }
+    return null;
+}
+
 async function handlePlugin(id, plugin, scope, dry, logFn) {
-    // The config path is contract data, not an assumption about OpenCode: a
-    // hardcoded `opencode.json` worked only while OpenCode was the one harness
-    // with a plugin, and would have written the wrong file for the next one.
+    // The path and the key are both contract data, not assumptions about
+    // OpenCode: a hardcoded `opencode.json` worked only while OpenCode was the
+    // one harness with a plugin, and a hardcoded `plugin` kept writing the key
+    // the schema had already deprecated.
     const configTemplate = plugin.config?.[scope];
     if (!configTemplate) {
         console.warn(
@@ -395,33 +471,93 @@ async function handlePlugin(id, plugin, scope, dry, logFn) {
         return false;
     }
 
-    const configPath = resolveFromCwd(configTemplate);
-
-    let config = {};
-    let existed = false;
-    if (await pathExists(configPath)) {
-        existed = true;
-        try {
-            config = JSON.parse(await readFile(configPath, 'utf8'));
-        } catch {
-            console.warn(`⚠️  ${id}: ${configPath} is not valid JSON, skipping plugin registration`);
-            return false;
-        }
-    }
-
-    config.plugin = config.plugin || [];
-    if (config.plugin.includes(plugin.entry)) {
-        logFn(`${id}: plugin "${plugin.entry}" already registered in ${configPath}`);
+    const key = plugin.key;
+    if (!key) {
+        console.warn(`⚠️  ${id}: no plugin key in tools.json, skipping plugin registration`);
         return false;
     }
 
-    const action = existed ? 'would add' : 'would create and add';
-    logFn(`${id}: ${action} "${plugin.entry}" to ${configPath}`);
+    const configPath = resolveFromCwd(configTemplate);
+    const keys = pluginKeys(key);
+
+    // A `.jsonc` beside the declared `.json` is the same config to OpenCode.
+    // Creating the declared one anyway would leave two files claiming the same
+    // role, with no rule saying which wins.
+    const existing = await findExistingConfig(configPath);
+
+    if (existing) {
+        const parsed = await readConfig(existing);
+        if (!parsed) {
+            console.warn(
+                `⚠️  ${id}: ${existing} is not valid JSON or JSONC, skipping plugin registration`,
+            );
+            return false;
+        }
+
+        if (declaresEntry(parsed.config, keys, plugin.entry)) {
+            logFn(`${id}: plugin "${plugin.entry}" already registered in ${existing}`);
+            return false;
+        }
+
+        if (!parsed.editable) {
+            console.warn(
+                `⚠️  ${id}: ${existing} is JSONC and is left untouched so its comments survive. ` +
+                    `Add "${plugin.entry}" to its "${key}" array by hand.`,
+            );
+            return false;
+        }
+
+        const current = existingPluginList(parsed.config, keys);
+        logFn(`${id}: ${dry ? 'would add' : 'added'} "${plugin.entry}" to ${existing}`);
+
+        if (!dry) {
+            const target = current?.key ?? key;
+            parsed.config[target] = [...(current?.list ?? []), plugin.entry];
+            await writeFile(existing, `${JSON.stringify(parsed.config, null, 2)}\n`);
+        }
+
+        return true;
+    }
+
+    // Nothing to edit. Before creating a config, consult the other scope:
+    // OpenCode merges its config sources and a later `plugins` array replaces
+    // the earlier one for that key, so a project file created here would
+    // silently drop every plugin the user registered globally.
+    if (scope === 'project') {
+        const userTemplate = plugin.config?.user;
+        const userPath = userTemplate ? resolveFromCwd(userTemplate) : null;
+        // The user config needs the same sibling lookup: on this machine it is
+        // `opencode.jsonc`, and only testing the declared `.json` would miss it
+        // and create the project file this branch exists to avoid.
+        const existingUser = userPath ? await findExistingConfig(userPath) : null;
+        if (existingUser) {
+            const userConfig = await readConfig(existingUser);
+            const userList = userConfig && existingPluginList(userConfig.config, keys);
+            if (userList?.list.length) {
+                if (declaresEntry(userConfig.config, keys, plugin.entry)) {
+                    logFn(
+                        `${id}: plugin "${plugin.entry}" is already registered in ${existingUser}, ` +
+                            `so ${configPath} was not created`,
+                    );
+                } else {
+                    console.warn(
+                        `⚠️  ${id}: ${existingUser} registers other plugins, and a project "${key}" array ` +
+                            `would replace them, so ${configPath} was not created. Add ` +
+                            `"${plugin.entry}" to ${existingUser} or to an existing project config.`,
+                    );
+                }
+                return false;
+            }
+        }
+    }
+
+    logFn(
+        `${id}: ${dry ? 'would create and add' : 'created and added'} "${plugin.entry}" to ${configPath}`,
+    );
 
     if (!dry) {
-        config.plugin.push(plugin.entry);
         await mkdir(dirname(configPath), { recursive: true });
-        await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
+        await writeFile(configPath, `${JSON.stringify({ [key]: [plugin.entry] }, null, 2)}\n`);
     }
 
     return true;

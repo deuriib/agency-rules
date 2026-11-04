@@ -53,9 +53,11 @@ Field checklist:
 - [ ] `frontmatter.required` — fields the harness cannot run without.
 - [ ] `frontmatter.map` — documentation of supported fields.
 - [ ] `plugin` — only if the harness needs a plugin registered. It carries the
-      `entry` the installer appends AND the `config` path per scope
-      (`{ "project": "…", "user": "…" }`), because the installer derives the
-      config file from this contract rather than hardcoding one.
+      `entry` the installer appends, the `key` it appends to (`plugins` for
+      OpenCode — `plugin` is deprecated in its schema), and the `config` path
+      per scope (`{ "project": "…", "user": "…" }`), because the installer
+      derives the key and the config file from this contract rather than
+      hardcoding OpenCode's.
 
 ---
 
