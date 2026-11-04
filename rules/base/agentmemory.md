@@ -1,11 +1,14 @@
 ---
 name: agentmemory
-description: Guidelines and strict rules for interacting with the Agentmemory MCP server via Gateway.
+description: Use when recalling prior context, saving a durable decision or lesson, resuming an earlier session, or tracking multi-step work across agents.
 alwaysApply: true
 tags: [mcp, memory, context]
 ---
 
 # Agentmemory MCP Rules via Gateway
+
+Memory is the only channel that survives a session. Treat every rule below as
+mandatory, not advisory.
 
 - **MEM-01** — Recall Before Asking. At the START of any task, call `memory_recall` (or `memory_smart_search`) with the task context before asking the user to repeat anything.
 - **MEM-02** — Save at Decision Points. When you learn something durable (a decision, a fix, a gotcha, a user preference, a project convention), call `memory_save` in the same session — do not batch it for later.
