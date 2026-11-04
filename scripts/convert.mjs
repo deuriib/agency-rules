@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { defineCommand } from 'citty';
-import { readRules } from './lib/frontmatter.mjs';
+import { readRulesOrExit } from './lib/cli-rules.mjs';
 import { renderers } from './lib/renderers/index.mjs';
 import { substituteSlug } from './lib/slug-template.mjs';
 
@@ -38,7 +38,7 @@ export default defineCommand({
         const INTEGRATIONS_DIR = process.env.INTEGRATIONS_DIR || 'integrations';
 
         const tools = JSON.parse(await readFile(TOOLS_PATH, 'utf8'));
-        const allRules = await readRules(RULES_DIR);
+        const allRules = await readRulesOrExit(RULES_DIR);
 
         if (allRules.length === 0) {
             console.error(`❌ No rules found in ${RULES_DIR}`);
