@@ -1,6 +1,6 @@
 ---
 name: commit-conventions
-description: Use when writing, amending, or reviewing a git commit message, to choose the right type, scope, and subject line.
+description: Use when writing or reviewing a commit message, creating a branch, or preparing a change for review, to follow the repo's commit and merge contract.
 alwaysApply: true
 tags: [git, commits, conventional-commits]
 ---
@@ -50,6 +50,14 @@ A short description in the imperative mood (e.g., "add", not "added").
 - Separate the subject from the body with a blank line.
 - Use the body to explain *what* and *why* (not *how*).
 - Use footers for referencing issues (e.g., `Closes #123`) or declaring breaking changes (`BREAKING CHANGE: <description>`).
+
+## Branches and review
+
+- **Short-lived branches.** Name them `type/short-hyphen-name`, cut from the current default branch, and rebase before requesting review. Days, not weeks.
+- **Rebase, don't merge.** No merge commits on a feature branch; a linear history is the point of the log.
+- **No direct-to-main.** Every change reaches the default branch through a pull request, including a one-line fix.
+- **Peer review on every change.** No self-merge — a change without a second reader is unreviewed, not approved.
+- **Green CI gates the merge.** Failing checks block; never merge red and fix forward.
 
 ## Examples
 
