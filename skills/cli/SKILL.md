@@ -302,8 +302,8 @@ copied was a warning too late to act on.
 exist in the compiled output — `❌ none of the requested rules exist in the
 compiled output: <slugs>` — and when nothing was installable at all:
 `❌ none of the requested harnesses could be installed: cursor (no compiled
-output)`, or `… cursor (no dest for scope "user" in tools.json)`, with one reason
-per target. The wording follows how the fleet was chosen — `requested` for
+output)`, or `… cursor (no dest for scope "user" in tools.json)`, or `… cursor
+(manifest lists no files)`, with one reason per target. The wording follows how the fleet was chosen — `requested` for
 `--harness`, `--all`, or a harness set picked in the interactive menu, and
 `detected` only when auto-detection chose — because a fleet with an unbuilt
 `integrations/` used to print `🎉 Installed 0 file(s)` and exit 0, which is the
@@ -321,6 +321,14 @@ edit) exits 1 with `❌ <id>: cannot read <path>/_manifest.json (invalid JSON: �
 and the fix — run `convert` — instead of a `SyntaxError` trace aimed at the
 reader of `planInstall`.
 
+**A manifest that lists no files is a broken build.** `⚠️  <id>: <path> lists no
+files, skipping` — because the gate counts installable targets, not files, so an
+empty manifest would otherwise end in `🎉 Installed 0 file(s)` and exit 0. A
+manifest whose `files` key is missing or is not an array gets the same treatment
+instead of crashing the copy loop. `convert` cannot emit that shape (it fails on
+zero rules and writes one file per rule), so it only arrives from a hand-edited
+or third-party manifest.
+
 Still a zero exit: a `--rules` slug missing from one of several manifests is
 warned about while the rest install; a selected harness with no output is warned
 about and skipped (`⚠️  <id>: no compiled output at <resolved INTEGRATIONS_DIR>/<id>,
@@ -334,8 +342,9 @@ summary and in dry-run and real runs alike:
 
     ⚠️  N harness(es) skipped — see the warnings above.
 
-It counts targets dropped for missing compiled output or a missing `dest` for the
-requested scope — not a harness that was reached but had no matching rules.
+It counts targets dropped for missing compiled output, a manifest that lists no
+files, or a missing `dest` for the requested scope — not a harness that was
+reached but had no matching rules.
 Partial success is still exit 0: only "nothing installable" fails. A zero exit
 from `install` therefore does not mean "installed" — read the output.
 

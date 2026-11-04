@@ -89,7 +89,9 @@ one test. The engine, installer, and validator never change.
 - **Manifest as index.** `integrations/<harness>/_manifest.json` records
   every file the installer should copy. The installer trusts the manifest,
   not a directory walk. A filtered build sets `partial: true` and records the
-  `filter`, so `install` can tell a full build apart from a slice of one.
+  `filter`, so `install` can tell a full build apart from a slice of one, and a
+  manifest that lists no files is treated as a broken build rather than an
+  empty install.
 - **Locked toolchain.** `mise.lock` pins exact versions of Node and any
   installed CLIs. CI uses `mise install --locked` to fail on drift.
 
