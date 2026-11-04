@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineCommand } from 'citty';
 import { readRulesOrExit } from './lib/cli-rules.mjs';
+import { findContradictions } from './lib/contradictions.mjs';
 import {
     compareRules,
     DEFAULT_MIN_UNIT_TOKENS,
@@ -63,6 +64,7 @@ export default defineCommand({
 
         const rules = await readRulesOrExit(RULES_DIR);
         const { perRule, duplicates } = compareRules(rules, { unitThreshold, minTokens });
+        const contradictionResult = findContradictions(rules);
 
         if (perRule.length === 0) {
             console.error(`❌ No rules found in ${RULES_DIR}`);
@@ -92,6 +94,8 @@ export default defineCommand({
                         minUnits,
                         unitThreshold,
                         violations: violations.length,
+                        numericClaims: contradictionResult.claims,
+                        contradictions: contradictionResult.contradictions,
                         perRule,
                         duplicates,
                     },
@@ -152,6 +156,25 @@ export default defineCommand({
             );
         }
 
+        const { claims, contradictions } = contradictionResult;
+        if (contradictions.length > 0) {
+            console.log(
+                `${C.red}❌ ${contradictions.length} numeric contradiction(s)${C.reset} ${C.dim}— same subject, different number${C.reset}\n`,
+            );
+            for (const c of contradictions) {
+                console.log(
+                    `  ${C.red}${String(c.subject).padStart(5)}%${C.reset}  ${C.bold}${c.fromRule}${C.reset} ${C.yellow}[${c.fromValues.join(', ')}]${C.reset} ${C.dim}vs${C.reset} ${C.bold}${c.intoRule}${C.reset} ${C.yellow}[${c.intoValues.join(', ')}]${C.reset}`,
+                );
+                console.log(`          ${truncate(c.from, 96)}`);
+                console.log(`          ${truncate(c.into, 96)}`);
+            }
+            console.log('');
+        } else {
+            console.log(
+                `${C.green}✅ No numeric contradictions${C.reset} ${C.dim}— ${claims} numeric claim(s) compared (${contradictionResult.compared} subject match(es))${C.reset}\n`,
+            );
+        }
+
         if (duplicates.length > 0) {
             console.log(
                 `\n${C.bold}Evidence${C.reset} ${C.dim}(highest-scoring matched units)${C.reset}`,
@@ -165,7 +188,9 @@ export default defineCommand({
         }
 
         console.log('');
-        process.exit(violations.length > 0 ? 1 : 0);
+        process.exit(
+            violations.length > 0 || contradictionResult.contradictions.length > 0 ? 1 : 0,
+        );
     },
 });
 
