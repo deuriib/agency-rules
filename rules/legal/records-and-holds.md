@@ -40,7 +40,9 @@ wins depends on whether a hold exists.
 
 - **Every legal document is versioned.** Contract, DPA, policy, notice — the version
   that was signed is the one that binds, so it has to be retrievable years later.
-- **An audit trail is append-only** — the mechanism is in `detection-and-response`.
+- **A hold reaches the audit trail too.** It is append-only by construction
+  (`detection-and-response`), which is exactly what makes it evidence rather than a
+  reconstruction.
 - **A redline is not the agreement.** Only the executed version counts, and only the
   executed version is worth quoting.
 - **A superseded version is retained, not overwritten.** The amendment history is

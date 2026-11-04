@@ -20,9 +20,9 @@ is how it avoids the failure of guessing at an answer.
   makes it defensible rather than merely documented.
 - **A new market, product line, or data category reopens the map.** A regulation that
   did not reach you last quarter can reach you this one.
-- **Sector rules are frequently stricter than the general law** — banking, health,
-  and telecoms each impose their own, and they are usually the ones that bite. Assume
-  the stricter regime applies until someone qualified says otherwise.
+- **Assume the strictest applicable regime governs.** Which sector regulators reach
+  a given data category is mapped in `governance-and-rights`; the general point is
+  that the stricter rule wins until someone qualified says otherwise.
 
 ## Escalation
 
@@ -36,5 +36,5 @@ is how it avoids the failure of guessing at an answer.
   says, then say plainly that interpreting it is not your call.
 - **Statutory and contractual clocks are escalated, never calculated.** Name the
   obligation and the owner; do not estimate the deadline.
-- **A legal question is not a blocker to work around.** Do the part that is not
-  contingent on the answer, and say which part is waiting.
+- **An open legal question does not stall the whole task.** Ship the part that does
+  not depend on the answer, and name precisely which part is waiting for it.

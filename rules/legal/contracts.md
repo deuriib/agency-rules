@@ -26,14 +26,12 @@ renewal timing, liability, and insurance.
 
 ## Renewal
 
-- **No auto-renewal without review.** There are two windows, and they are a
-  sequence rather than a disagreement:
-  - **90 days before expiry — commercial.** Renovate, expand, or exit. `post-sale`
-    owns that conversation.
-  - **60 days before expiry — legal and contract.** Do the terms still work, has
-    the price moved, which notice window must be hit. This rule owns this one.
-  - When the contract requires more notice than either window allows, **the notice
-    period is the real deadline**, not the expiry date.
+- **No auto-renewal without review**, and the review runs in two ordered windows:
+  the commercial conversation first (`post-sale` owns it at 90 days), then the legal
+  and contract pass at 60 days — do the terms still work, has the price moved, which
+  notice window must be hit. This rule owns the second.
+- **The notice period is the real deadline when it exceeds both windows.** An expiry
+  date is not the last moment to act; the contractual notice period is.
 - **No unilateral change is accepted.** A counterparty that updates terms by notice
   is proposing an amendment, not amending.
 

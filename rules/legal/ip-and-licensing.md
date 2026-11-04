@@ -44,5 +44,6 @@ step both of them depend on.
 - **A font licence covers its use, not necessarily its embedding.** Embedding rights
   are frequently a separate line item, and shipping without them is a claim you
   cannot defend.
-- **Model, stock, and typeface terms change more often than code licences.** Re-read
-  the commercial-use clause at renewal, not at first download.
+- **Model, stock, and typeface terms are re-read on every renewal**, because they
+  change far more often than code licences do — and the version you accepted last
+  year is not the one currently in force.
