@@ -304,6 +304,7 @@ The conversion engine itself never changes.
 - [Rule spec](docs/RULE-SPEC.md) — the neutral frontmatter format.
 - [Adding a harness](docs/ADDING-A-HARNESS.md) — extension guide.
 - [Troubleshooting](docs/TROUBLESHOOTING.md) — the path's stalls and their fixes.
+- [Releasing](docs/RELEASING.md) — how to verify a release actually reached npm.
 - [DX baseline](docs/dx/BASELINE.md) — the measured before-state of the path above.
 - [DX decisions](docs/dx/DECISIONS.md) — why Copilot support works the way it does, and what the golden path mandates.
 - [DX scorecard](docs/dx/SCORECARD.md) — what changed, what is still unmeasured, who owns it.
