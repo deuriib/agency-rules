@@ -43,9 +43,10 @@ the suite outside mise, node 21 or newer is required: `mise run test` expands a
 1. **Branch** from `main`: `git switch -c feat/my-rule`.
 2. **Edit** files under `rules/` (or `scripts/lib/renderers/` for a new
    harness). To start a rule, scaffold it:
-   `mise run create-rule -- api-review` then fill in the description and the
-   placeholder bullets. The generator refuses a duplicate slug and a missing
-   description.
+   `mise run create-rule -- api-review --description "Use when reviewing REST endpoints."`
+   then fill in the placeholder bullets. The generator refuses a duplicate slug
+   and a missing description, and it will not prompt for one when stdin is not a
+   terminal.
 3. **Format + lint**: `mise run check` (Biome, write mode — fixes automatically).
 4. **Validate**: `mise run validate`.
 5. **Convert**: `mise run convert` and inspect `integrations/`.

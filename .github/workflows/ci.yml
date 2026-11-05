@@ -32,12 +32,31 @@ jobs:
       - name: Run tests
         run: mise run test
 
-      # The documented path, executed. The README tells a newcomer to run these
-      # two commands, so CI runs them too: a destination in tools.json that no
-      # longer resolves, or an install that writes nothing, fails here instead of
-      # failing them. The installed directories are gitignored build output, so
-      # this leaves the checkout a place a later step could still commit from.
-      - name: Documented install path
+      # M8: every command the docs tell a user to run, executed. The ledger in
+      # `tests/documented-commands.test.mjs` fails the build when a documented
+      # command has no claim, so this step and that ledger move together.
+      #
+      # `mise run ci` is here rather than assumed: the README's step 4 is exactly
+      # that command, and a composition nobody runs is the defect this runbook
+      # was opened to fix. It costs about 45 s on top of the steps above, which is
+      # still an order of magnitude under the pipeline's own target.
+      - name: Documented commands
         run: |
-          mise run install --all --scope project
-          mise run list --harness copilot
+          set -euo pipefail
+          mise install                                   # Quick Start step 2 (idempotent here)
+          mise run setup                                 # documented dependency install
+          mise tasks > /dev/null                         # "see mise tasks for the up-to-date list"
+          mise run ci                                    # Quick Start step 4, read-only
+          mise run eval -- --json > /dev/null
+          mise run eval -- --rule devops > /dev/null
+          mise run --force eval > /dev/null
+          mise run convert:dry-run > /dev/null
+          mise run install:dry-run > /dev/null
+          mise run install:dry-run -- --all > /dev/null
+          mise run list --harness cursor > /dev/null
+          mise run check:ci
+          mise run install --all --scope project         # Quick Start step 5
+          mise run list --harness copilot > /dev/null    # Quick Start step 6
+          mise run create-rule -- api-review --description "Use when reviewing REST endpoints."
+          test -f rules/base/api-review.md
+          rm rules/base/api-review.md
