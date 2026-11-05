@@ -28,16 +28,16 @@ path.** So the first thing measured is the README, executed.
 
 | Metric | Baseline | Source | State |
 | --- | --- | --- | --- |
-| **M1** Time to first success | **Not reached.** The documented path terminates after **70.9 s** with **0 files installed** and exit code **0** | Clean-room run, fresh `HOME`, documented commands only: clone 12.2 s, `mise install` 52.8 s, `mise run convert` 2.2 s, `mise run install --scope project` 3.7 s → `⚠️ No harness detected`, 0 artifacts | MEASURED (as a failure to reach first success) |
-| **M2** CI time to first failure | `UNMEASURED` — **zero** `ci.yml` failures in 178 runs on `main`; the only failed run (`41360027029`) has 0 jobs and no retrievable log | `gh api repos/{owner}/{repo}/workflows/ci.yml/runs?branch=main&status=failure` → `total_count: 0`; `gh run view 41360027029 --log-failed` → `log not found` | UNMEASURED |
-| **M3** CI pipeline duration | **p50 16 s, p90 22 s** (n=91, `main`). Literal 100-run window across branches: p50 16.8 s, p90 22.2 s (n=100) | `gh run list --workflow ci.yml --limit 100 --json databaseId,startedAt,updatedAt,...` then `gh api .../runs/<id>/jobs`, terminal = max job `completed_at` | MEASURED |
-| **M4** Flake rate | `ci` **0.0%** (0/178) · `release` **2.2%** (2/90: runs 41149390539 and 41153632915, both 2026-10-31) · `sync-labels` **0.0%** (0/22) · combined **0.69%** (2/290) | `gh run list --json attempt,conclusion,headSha` + `gh api .../attempts/<n>`; a flake is `attempt > 1` with unchanged `head_sha` and a green final conclusion | MEASURED |
+| **M1** Time to first success | **Not reached.** The documented path ends with **0 files installed** and exit code **0** on a fresh clone (artifact: `/tmp/dx-run2/step5a-install.log`). The per-step seconds quoted in this document were printed to the operator's console during that run and were never captured to a file, so they are **not** offered as evidence and no M1 duration is claimed for the before-state | Artifact for the outcome: `step5a-install.log` → `⚠️ No harness detected`, 0 artifacts, exit 0. Durations: session output only, not stored | MEASURED (outcome) / `UNMEASURED` (duration) |
+| **M2** CI time to first failure | `UNMEASURED` — **0** `ci.yml` failures among the **91** push runs on `main`. One failed run exists in the repository's history, but it is not one of them: `41360027029` is a `pull_request` run on branch `release-please--branches--main--components--agency-rules`, `conclusion: failure`, **0 jobs**, and its log is not retrievable — so no first-failure timestamp exists to time | `gh api .../workflows/ci.yml/runs?branch=main&status=failure` → `total_count: 0`; `gh run view 41360027029 --json`, which is what identifies it as a PR run with no jobs | UNMEASURED |
+| **M3** CI pipeline duration | **p50 16 s, p90 22 s** over the **91 push runs on `main`**; the literal last-100 window across all events gives p50 16.8 s, p90 22.2 s | `gh run list --workflow ci.yml --limit 100 --json ...` then `gh api .../runs/<id>/jobs`, terminal = max job `completed_at` | MEASURED |
+| **M4** Flake rate | `ci` **0.0%** (0/178 = 91 push + 87 pull_request) · `release` **2.2%** (2/90: runs 41149390539 and 41153632915, both 2026-10-31) · `sync-labels` **0.0%** (0/22) · combined **0.69%** (2/290) | `gh run list --json attempt,conclusion,headSha` + `gh api .../attempts/<n>`; `gh run list --event pull_request` gives 87, so PR runs are inside the 178, not missing from it | MEASURED |
 | **M5** Bootstrap failure rate | `UNMEASURED` — n=1 attempt. It exited 0 and installed nothing, which is neither a non-zero exit nor an off-path command, so it does not count as a runbook-defined bootstrap failure. The silent no-op is recorded as defect **D1** instead | Clean-room run above | UNMEASURED (n=1) |
 | **M6** Step count | **5 documented** + **1 manual UI action** (the TTY menu on step 5) + **1 undocumented prerequisite** (a harness directory must already exist) = **7 effective** | `README.md` Quick Start; `scripts/install.mjs` interactive branch; `scripts/lib/detect.mjs:20-34` | MEASURED |
-| **M7** Tool decisions recorded | **0 of 0** — no build-vs-adopt decision record existed for any harness | `ls docs/` → no decision record | MEASURED |
+| **M7** Tool decisions recorded | **0 decision records exist** — no build-vs-adopt record was written for any harness (a count of artifacts, not a pass rate) | `find docs -name '*decision*'` → none | MEASURED (count) |
 | **M8** Documented-command pass rate | **0%** of the install command executed in CI; `mise run install` is absent from `.github/workflows/ci.yml` | `cat .github/workflows/ci.yml` | MEASURED |
 | **M9** Stale sample count | **Not applicable** — the repository ships no SDK samples; the only executable examples are doc snippets | `find . -name '*sample*' -o -name '*example*'` outside `node_modules` → none | N/A (declared, not skipped silently) |
-| **M10** Senior hours per onboarding | `UNMEASURED` — no human onboarding was observed. The scripted run needed **3** interventions, all documentation defects (placeholder clone URL, undocumented harness prerequisite, undocumented TTY menu), and **0** minutes of senior-engineer time | Clean-room transcript | UNMEASURED |
+| **M10** Senior hours per onboarding | `UNMEASURED` — no human onboarding was observed, so no senior time was spent and none is evidence of cost | No subject, no onboarding channel, no intervention log | UNMEASURED |
 
 ### DORA proxies (reported post-runbook, per the runbook's own window rules)
 
@@ -74,7 +74,6 @@ reproduced, not inferred.
 ---
 
 ## What this baseline does not measure
-
 Stated so the scorecard cannot be read as broader than it is:
 
 - **A human's first-run experience.** No subject was recruited. M1 and M10 are
@@ -86,3 +85,25 @@ Stated so the scorecard cannot be read as broader than it is:
 - **Copilot's real injection behaviour.** Nothing here measures what GitHub
   Copilot or VS Code actually loads, truncates, or de-duplicates; the Copilot
   work is judged on the file format it documents, not on observed model input.
+
+---
+
+## Corrections made after review
+
+This document was reviewed by a Reality Checker and an Evidence Collector before
+it was used to gate anything. Six claims did not survive and were rewritten
+rather than kept:
+
+| Was | Correction |
+| --- | --- |
+| M2 mixed "0 failures in 178 runs on `main`" with a named failed run | Both statements are now precise: 0 failures among the **91** push runs on `main`; the one failed run is a `pull_request` run on a release-please branch with 0 jobs, so it is not a `main` failure and has no timing |
+| M3 said `n=91, main` and M4 said `n=178` with no reconciliation | Stated explicitly: 91 push + 87 pull_request = 178, so the flake denominator does not miss PR runs |
+| M1 quoted `70.9 s` as a measured before-state | The duration was console output, never stored. The stored artifact supports the **outcome** (0 files, exit 0); the seconds are no longer offered as evidence |
+| M7 reported `0 of 0` as a measurement | A ratio over zero items is not a measurement. It is now a count: 0 decision records exist |
+| M10 credited "3 interventions" to a run that could not have produced them (no TTY in that run) | Removed. The three documentation defects below are attributed to the probes that actually confirmed them |
+| M2 called a 0-job run's log "not found" as if it proved something | Kept only as the reason no timestamp is obtainable, not as evidence of a failure mode |
+
+Three documentation defects were confirmed by separate probes rather than by the
+M1 run, and are attributed here accordingly: the placeholder clone URL (read from
+the file), the TTY menu (a pty probe, capped at 600 s, reproduced the hang), and
+the harness prerequisite (`scripts/lib/detect.mjs` plus an empty-directory run).

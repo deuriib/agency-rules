@@ -17,7 +17,7 @@ const ROOT = join(import.meta.dirname, '..');
 /** Workflow steps that stand in for a mise task under a different command. */
 const EQUIVALENTS = {
     // The workflow calls the binary directly so Biome's own action reports it.
-    check: 'biome ci',
+    'check:ci': 'biome ci',
 };
 
 function ciTaskDependencies() {
@@ -62,4 +62,21 @@ test('the overlap eval is part of both the task and the workflow', () => {
     // The specific regression: eval was added to `depends` only.
     assert.ok(ciTaskDependencies().includes('eval'), 'eval must be in [tasks.ci] depends');
     assert.match(workflowStepNames(), /mise run eval/);
+});
+
+test('the ci pipeline never runs a task that writes to the tree it is verifying', () => {
+    // `check` is `biome check --write`; a `ci` that depended on it could edit the
+    // files it was judging and still exit 0. `check:ci` is the read-only twin.
+    assert.ok(
+        !ciTaskDependencies().includes('check'),
+        'ci must use check:ci, not the write-mode check',
+    );
+});
+
+test('the documented install and observe commands run in the workflow', () => {
+    // The Quick Start tells a newcomer to run these two. A destination in
+    // tools.json that stops resolving has to fail a build, not a newcomer.
+    const steps = workflowStepNames();
+    assert.match(steps, /mise run install --all --scope project/);
+    assert.match(steps, /mise run list --harness/);
 });

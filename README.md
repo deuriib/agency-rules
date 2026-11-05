@@ -113,6 +113,10 @@ around the number will not be caught.
 
 ## Quick Start
 
+**Prerequisite:** [mise](https://mise.jdx.dev/getting-started.html) —
+`curl https://mise.run | sh` or `brew install mise`. It is the only thing you
+install by hand; it pins everything below.
+
 The only supported path from a fresh clone to an install you can verify. Six
 steps, one owner each — the same six the DX runbook gates on
 ([`docs/dx/`](docs/dx/SCORECARD.md)).
@@ -184,12 +188,13 @@ All commands go through mise:
 | `mise run validate` | Validate every rule's frontmatter against `rules/_schema.json` |
 | `mise run eval` | Score textual overlap between rules (fails above the gate) |
 | `mise run check` | Format + lint + organize imports with Biome (write mode) |
+| `mise run check:ci` | Verify formatting and linting without writing |
 | `mise run convert` | Compile `rules/` → `integrations/<harness>/` |
 | `mise run convert:dry-run` | Preview which files `convert` would write (no writes) |
 | `mise run install` | Sync compiled output into harness directories |
 | `mise run install:dry-run` | Preview which files `install` would copy (no writes) |
 | `mise run test` | Run the Node test suite |
-| `mise run ci` | Full pipeline (`validate` → `eval` → `check` → `convert` → `test`) |
+| `mise run ci` | Full pipeline (`validate` → `eval` → `check:ci` → `convert` → `test`), read-only |
 
 See `mise tasks` for the up-to-date list.
 

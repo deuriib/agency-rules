@@ -164,3 +164,8 @@ integrations/*/
 .cursor/rules/
 .claude/rules/
 .github/instructions/
+
+# Written by `install` when it registers the `opencode-rules` plugin and no
+# OpenCode config already registers plugins. It names a plugin for the machine
+# that ran the install, so it is not source. Delete the leading slash to commit it.
+opencode.json
