@@ -31,3 +31,13 @@ jobs:
 
       - name: Run tests
         run: mise run test
+
+      # The documented path, executed. The README tells a newcomer to run these
+      # two commands, so CI runs them too: a destination in tools.json that no
+      # longer resolves, or an install that writes nothing, fails here instead of
+      # failing them. The installed directories are gitignored build output, so
+      # this leaves the checkout a place a later step could still commit from.
+      - name: Documented install path
+        run: |
+          mise run install --all --scope project
+          mise run list --harness copilot

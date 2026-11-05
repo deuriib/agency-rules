@@ -24,13 +24,17 @@ Everything else (Node version, `npm ci`, tasks) is handled by mise.
 ## Setup
 
 ```bash
-git clone https://github.com/<your-org>/agency-rules.git
+git clone https://github.com/deuriib/agency-rules.git
 cd agency-rules
 mise install          # installs Node 22 and runs `npm ci`
 mise run ci           # verifies the baseline is green
 ```
 
 If `mise run ci` fails on a fresh clone, that's a bug — please open an issue.
+
+`mise` pins Node 22, so the version you get is the version CI gets. If you run
+the suite outside mise, node 21 or newer is required: `mise run test` expands a
+`tests/**/*.test.mjs` glob, which `node --test` only understands from 21 up.
 
 ---
 

@@ -4,7 +4,8 @@
 
 `agency-rules` compiles a single set of generic Markdown rules into the
 native formats expected by **Google Antigravity**, **pi-agent**,
-**oh-my-pi (omp)**, and **OpenCode** (via the [opencode-rules](https://github.com/frap129/opencode-rules) plugin).
+**oh-my-pi (omp)**, **OpenCode** (via the [opencode-rules](https://github.com/frap129/opencode-rules) plugin),
+**Cursor**, **Claude Code**, and **GitHub Copilot**.
 
 The whole pipeline — toolchain, environment, and tasks — is managed by
 [mise](https://mise.jdx.dev), so every collaborator and CI runner uses the
@@ -24,6 +25,7 @@ Every coding agent has its own rule format:
 | `opencode` — OpenCode | Markdown via [opencode-rules](https://github.com/frap129/opencode-rules) plugin | `.opencode/rules/*.md` |
 | `cursor` — Cursor | Markdown with `description` / `globs` / `alwaysApply` | `.cursor/rules/*.mdc` |
 | `claudeCode` — Claude Code | Markdown with `paths` for conditional loading | `.claude/rules/*.md` |
+| `copilot` — GitHub Copilot | Markdown with `applyTo` globs (comma-separated) | `.github/instructions/*.instructions.md` |
 
 **pi-agent needs a loader.** Pi does not read `<agent-dir>/rules` on its own, so
 `piAgent` output is only live when a rules extension is installed — the
@@ -34,8 +36,8 @@ mirrors it as `.pi/agent/rules` rather than `.pi/rules`: a path the compiler
 writes and the loader never reads installs cleanly and reaches no prompt.
 Every other harness here is read natively by its agent.
 
-Writing the same rule four times is a maintenance nightmare. `agency-rules`
-lets you write it **once** in a neutral format and compile it to all four
+Writing the same rule seven times is a maintenance nightmare. `agency-rules`
+lets you write it **once** in a neutral format and compile it to all seven
 with a single command, driven by a declarative contract (`tools.json`).
 
 ---
@@ -111,22 +113,43 @@ around the number will not be caught.
 
 ## Quick Start
 
+The only supported path from a fresh clone to an install you can verify. Six
+steps, one owner each — the same six the DX runbook gates on
+([`docs/dx/`](docs/dx/SCORECARD.md)).
+
+| # | Step | Command | Owner |
+| --- | --- | --- | --- |
+| 1 | **Clone** | `git clone https://github.com/deuriib/agency-rules.git` | DX Engineer |
+| 2 | **Bootstrap** | `mise install` — pins Node 22 + Biome, then `npm ci` runs from the `postinstall` hook | Platform Engineer |
+| 3 | **Run** | `mise run convert` — compiles `rules/` → `integrations/<harness>/` | Platform Engineer |
+| 4 | **Test** | `mise run ci` — validate → eval → lint → convert → test | Developer Tooling Engineer |
+| 5 | **Deploy** | `mise run install --all --scope project` | DevOps Automator |
+| 6 | **Observe** | `mise run list --harness copilot` — every row reads `✅ synced` | SRE |
+
 ```bash
-# 1. Install toolchain + dependencies (one time)
-git clone https://github.com/<your-org>/agency-rules.git
+git clone https://github.com/deuriib/agency-rules.git
 cd agency-rules
 mise install
-
-# 2. Compile rules to every harness
 mise run convert
-
-# 3. Install into harnesses detected on your machine
-mise run install --scope project
+mise run ci
+mise run install --all --scope project
+mise run list --harness copilot
 ```
 
-That's it. Your rules are now live in `.agents/`, `.pi/`, `.omp/`, and
-`.opencode/` (and the `opencode-rules` plugin is registered in
-`opencode.json` automatically).
+**Stuck?** See [Troubleshooting](docs/TROUBLESHOOTING.md) — every stall on the path above, in the order you hit it, with the exact output and the one command that clears it.
+
+**Why `--all` and not detection.** Step 5 has no harness to detect on a fresh
+clone: detection reads the directories on your machine, and none exist yet, so
+plain `mise run install --scope project` warns and installs nothing — a zero
+exit that leaves you with no rules and no error to explain it. `--all` writes
+to every destination `tools.json` declares instead:
+`.agents/rules/`, `.pi/agent/rules/`, `.omp/rules/`, `.opencode/rules/`,
+`.cursor/rules/`, `.claude/rules/`, `.github/instructions/`.
+
+Those seven directories are build output of `rules/` and are gitignored. The one
+file `install` may create outside them is an OpenCode config for the
+`opencode-rules` plugin; if a config already registers plugins, it says so and
+writes nothing rather than creating a second file that would shadow it.
 
 ---
 
@@ -136,9 +159,10 @@ That's it. Your rules are now live in `.agents/`, `.pi/`, `.omp/`, and
 agency-rules/
 ├── rules/              ← source of truth (Markdown + YAML frontmatter)
 ├── integrations/       ← compiled output (generated, gitignored)
+├── bin/                ← the CLI entry point
 ├── scripts/            ← convert, install, validate + renderers
-├── tests/              ← node:test suites for renderers and parsing
-├── docs/               ← architecture, spec, extension guide
+├── tests/              ← node:test suites: renderers, CLI contract, documented path
+├── docs/               ← architecture, spec, extension guide, DX evidence
 ├── tools.json          ← the conversion contract
 └── mise.toml           ← toolchain + tasks
 ```
@@ -156,7 +180,7 @@ All commands go through mise:
 | Command | What it does |
 | --- | --- |
 | `mise run setup` | Install Node dependencies (`npm ci`) |
-| `mise run create-rule -- <slug>` | Scaffold a new rule skeleton |
+| `mise run create-rule -- <slug> --description "…"` | Scaffold a new rule skeleton |
 | `mise run validate` | Validate every rule's frontmatter against `rules/_schema.json` |
 | `mise run eval` | Score textual overlap between rules (fails above the gate) |
 | `mise run check` | Format + lint + organize imports with Biome (write mode) |
@@ -274,6 +298,9 @@ The conversion engine itself never changes.
 - [Architecture](docs/ARCHITECTURE.md) — data flow, contracts, caching.
 - [Rule spec](docs/RULE-SPEC.md) — the neutral frontmatter format.
 - [Adding a harness](docs/ADDING-A-HARNESS.md) — extension guide.
+- [Troubleshooting](docs/TROUBLESHOOTING.md) — the path's stalls and their fixes.
+- [DX baseline](docs/dx/BASELINE.md) — the measured before-state of the path above.
+- [DX scorecard](docs/dx/SCORECARD.md) — what changed, what is still unmeasured, who owns it.
 
 ---
 
