@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0](https://github.com/deuriib/agency-rules/compare/v0.19.5...v0.20.0) (2026-11-05)
+
+
+### Features
+
+* **harness:** add GitHub Copilot support and prove the documented path ([#107](https://github.com/deuriib/agency-rules/issues/107)) ([7cf45d8](https://github.com/deuriib/agency-rules/commit/7cf45d8dcb5541a8a8f4308c30c6791d58bedb51))
+
 ## [0.19.5](https://github.com/deuriib/agency-rules/compare/v0.19.4...v0.19.5) (2026-11-04)
 
 
