@@ -132,3 +132,31 @@ test('documented path: install with nothing detected is a silent-by-design no-op
     assert.match(run.stderr, /No harness detected/);
     assert.ok(!(await exists(join(cwd, '.github', 'instructions'))), 'nothing may be written');
 });
+
+test('documented path: with no overrides, convert writes into the project you are standing in', async () => {
+    // The README says to inspect `integrations/` after `convert`. Nothing asserted
+    // that a bare run puts it there — every other test in this file sets
+    // INTEGRATIONS_DIR, which would hide a default that resolves somewhere else.
+    // The environment is the trap here twice over: mise exports RULES_DIR and
+    // INTEGRATIONS_DIR into a developer's shell, so a clean-room run proves
+    // nothing unless both are removed first.
+    const cwd = await mkdtemp(join(tmpdir(), 'agency-rules-docs-'));
+
+    const env = { ...process.env };
+    for (const name of ['RULES_DIR', 'INTEGRATIONS_DIR', 'TOOLS_PATH']) delete env[name];
+
+    const run = await new Promise((resolve) => {
+        execFile(
+            process.execPath,
+            [BIN, 'convert', '--harness', 'copilot'],
+            { cwd, env },
+            (error, stdout, stderr) => resolve({ code: error?.code ?? 0, stdout, stderr }),
+        );
+    });
+
+    assert.equal(run.code, 0, run.stderr);
+    assert.ok(
+        await exists(join(cwd, 'integrations', 'copilot', 'typescript.instructions.md')),
+        'a bare convert must write integrations/ into the directory it was run from',
+    );
+});
