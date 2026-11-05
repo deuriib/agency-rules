@@ -34,6 +34,7 @@ const DOC_FILES = [
     'docs/ARCHITECTURE.md',
     'docs/RULE-SPEC.md',
     'docs/TROUBLESHOOTING.md',
+    'docs/RELEASING.md',
 ];
 
 // ── Command shapes ───────────────────────────────────────────────────────
@@ -74,6 +75,35 @@ function tokenize(text) {
 }
 
 /**
+ * Remove leading `NAME=value` assignments, honouring quotes and `$(...)` so a
+ * value with spaces is consumed whole.
+ */
+function stripLeadingAssignments(text) {
+    let rest = text;
+    while (/^[A-Z_][A-Z0-9_]*=/.test(rest)) {
+        let i = rest.indexOf('=') + 1;
+        let depth = 0;
+        let quote = null;
+        for (; i < rest.length; i++) {
+            const char = rest[i];
+            if (quote) {
+                if (char === quote) quote = null;
+                continue;
+            }
+            if (char === '"' || char === "'") {
+                quote = char;
+                continue;
+            }
+            if (char === '(') depth++;
+            else if (char === ')') depth--;
+            else if (/\s/.test(char) && depth === 0) break;
+        }
+        rest = rest.slice(i).trim();
+    }
+    return rest;
+}
+
+/**
  * `surface | subcommand | sorted-flags`.
  *
  * Positional arguments are deliberately excluded: `--harness cursor` and
@@ -82,15 +112,18 @@ function tokenize(text) {
  * Flags are sorted so the order a doc writes them in does not matter.
  */
 export function signatureOf(line) {
-    const text = line
-        .replace(/\s+#.*$/, '')
-        .replace(/<\/dev\/null/g, '')
-        .trim();
+    // `RULES_DIR=… npx agency-rules …` — a leading assignment is environment, not
+    // the command being documented. Its value can contain spaces and quotes
+    // (`VERSION=$(node -p "…")`), so it is consumed as a unit rather than token by
+    // token, and a line that only assigns documents a value, not a command.
+    const text = stripLeadingAssignments(
+        line
+            .replace(/\s+#.*$/, '')
+            .replace(/<\/dev\/null/g, '')
+            .trim(),
+    );
+    if (!text) return null;
     const tokens = tokenize(text);
-
-    // `RULES_DIR=… npx agency-rules …` — a leading assignment is environment,
-    // not the command being documented.
-    while (tokens.length > 0 && /^[A-Z_][A-Z0-9_]*=/.test(tokens[0])) tokens.shift();
     if (tokens.length === 0) return null;
 
     let surface;
@@ -231,13 +264,37 @@ const DECLARED = [
         signature: 'mise|install|--scope',
         reason: 'the anti-pattern the `--all` paragraph explains; the no-op it describes is asserted by `tests/documented-path.test.mjs`, which needs an empty HOME to reach that branch',
     },
+    {
+        // One class, one declaration: the release procedure inspects the registry,
+        // a tarball, and the publish log. None of those can run while CI is running,
+        // because the release they verify does not exist yet. The lookahead keeps
+        // the mise prerequisite install (`curl https://mise.run | sh`) out of this
+        // bucket — it has its own reason above.
+        matches: /^(curl|tar|gh)\|(?!https:\/\/mise\.run)/,
+        reason: 'release-time verification against the published registry, its tarball, or its publish log; CI has no release to verify, and the shasum comparison this procedure describes is the verification',
+    },
+    {
+        matches: /^npx\|agency-rules@/,
+        reason: 'verifies the published tarball rather than this checkout; it cannot run before the release it verifies exists',
+    },
 ];
 
 const CLAIMED = new Set([
     ...EXECUTED_BY_TEST.flatMap((entry) => entry.covers),
     ...EXECUTED_BY_WORKFLOW.flatMap((entry) => entry.covers),
-    ...DECLARED.map((entry) => entry.signature),
+    ...DECLARED.flatMap((entry) => entry.signature ?? []),
 ]);
+
+/**
+ * A declaration may name one signature or a class of them, because some buckets
+ * are better described by shape than enumerated: every command in the release
+ * procedure reads the registry, and each one is unexecutable for one reason.
+ */
+const CLAIMED_PATTERNS = DECLARED.flatMap((entry) => entry.matches ?? []);
+
+function isClaimed(signature) {
+    return CLAIMED.has(signature) || CLAIMED_PATTERNS.some((pattern) => pattern.test(signature));
+}
 
 // ── Doc scanning ─────────────────────────────────────────────────────────
 
@@ -285,7 +342,7 @@ async function documentedCommands() {
 // ── Tests ────────────────────────────────────────────────────────────────
 
 test('every documented command is either executed or declared impossible', async () => {
-    const missing = (await documentedCommands()).filter((entry) => !CLAIMED.has(entry.signature));
+    const missing = (await documentedCommands()).filter((entry) => !isClaimed(entry.signature));
     assert.deepEqual(
         missing.map((entry) => `${entry.file}:${entry.line}  ${entry.command}`),
         [],
@@ -296,7 +353,12 @@ test('every documented command is either executed or declared impossible', async
 
 test('no ledger entry outlives the command it covers', async () => {
     const documented = new Set((await documentedCommands()).map((entry) => entry.signature));
-    const orphaned = [...CLAIMED].filter((signature) => !documented.has(signature));
+    const orphaned = [
+        ...[...CLAIMED].filter((signature) => !documented.has(signature)),
+        ...DECLARED.filter(
+            (entry) => entry.matches && ![...documented].some((sig) => entry.matches.test(sig)),
+        ).map((entry) => String(entry.matches)),
+    ];
     assert.deepEqual(
         orphaned,
         [],
