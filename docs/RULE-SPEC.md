@@ -57,20 +57,35 @@ the frontmatter and is handled by the renderer.
 
 ## Compatibility matrix
 
-| Field | Antigravity | pi-agent | oh-my-pi | OpenCode | Cursor | Claude Code |
-| --- | --- | --- | --- | --- | --- | --- |
-| `name` | (derived) | ✅ used | ✅ used | — | ✗ dropped (filename) | ✗ dropped |
-| `description` | ✅ emitted | ✅ emitted | ✅ emitted | ✅ used for matching | ✅ emitted | ✗ dropped (not in schema) |
-| `globs` | ✅ joined as string under `trigger: glob` | ✗ dropped | ✅ preserved | ✅ preserved | ✅ joined as string | ✅ → `paths`, array |
-| `alwaysApply` | ✅ → `trigger: always_on` | ✗ dropped | ✅ preserved | ✗ dropped | ✅ preserved, suppresses `globs` | ✅ as *absence* of `paths` |
-| `trigger` | ✅ emitted | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped |
-| `match` | ✗ dropped | ✗ dropped | ✗ dropped | ✅ preserved | ✗ dropped | ✗ dropped |
-| `tags` | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped |
-| `tools` | ✗ dropped | ✅ preserved | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped |
+| Field | Antigravity | pi-agent | oh-my-pi | OpenCode | Cursor | Claude Code | GitHub Copilot |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `name` | (derived) | ✅ used | ✅ used | — | ✗ dropped (filename) | ✗ dropped | ✗ dropped (filename) |
+| `description` | ✅ emitted | ✅ emitted | ✅ emitted | ✅ used for matching | ✅ emitted | ✗ dropped (not in schema) | ✅ emitted |
+| `globs` | ✅ joined as string under `trigger: glob` | ✗ dropped | ✅ preserved | ✅ preserved | ✅ joined as string | ✅ → `paths`, array | ✅ joined into `applyTo` |
+| `alwaysApply` | ✅ → `trigger: always_on` | ✗ dropped | ✅ preserved | ✗ dropped | ✅ preserved, suppresses `globs` | ✅ as *absence* of `paths` | ✅ → `applyTo: "**"`, suppresses `globs` |
+| `trigger` | ✅ emitted | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped |
+| `match` | ✗ dropped | ✗ dropped | ✗ dropped | ✅ preserved | ✗ dropped | ✗ dropped | ✗ dropped |
+| `tags` | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped |
+| `tools` | ✗ dropped | ✅ preserved | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped | ✗ dropped |
 
 "✗ dropped" means the field is not emitted in that harness's output. It does
 not mean it's an error to set it — other harnesses may need it. The renderer
 picks what its harness understands.
+
+### GitHub Copilot's `applyTo`
+
+Copilot injects a path-specific instruction file only when its `applyTo` glob
+matches a file it is working on, so the renderer always emits the field and
+never drops it conditionally: a file without one installs cleanly and reaches no
+prompt. Multiple globs are joined with commas, which is the syntax Copilot
+documents. A rule with no `globs`, or with `alwaysApply: true`, compiles to
+`applyTo: "**"` — every file.
+
+That last case is the one to know about: this rule set has 45 rules without
+`globs`, so a full `copilot` install is 51 files and about 128 KB of instruction
+text that Copilot may inject on any file. It is the same always-available model
+the other harnesses use, but Copilot charges for it in context rather than only
+in a tool listing. Add `globs` to a rule if that cost shows up.
 
 ---
 

@@ -175,3 +175,4 @@ Include in the description:
 | `opencode` | OpenCode | `md-plugin` | `per-rule` | `.opencode/rules/*.md` |
 | `cursor` | Cursor | `md-cursor-mdc` | `per-rule` | `.cursor/rules/*.mdc` |
 | `claudeCode` | Claude Code | `md-claude-rules` | `per-rule` | `.claude/rules/*.md` |
+| `copilot` | GitHub Copilot | `md-copilot-instructions` | `per-rule` | `.github/instructions/*.instructions.md` |

@@ -4,6 +4,7 @@ import matter from 'gray-matter';
 
 import { renderAntigravity } from '../scripts/lib/renderers/antigravity.mjs';
 import { renderClaudeRules } from '../scripts/lib/renderers/claude-code.mjs';
+import { renderCopilot } from '../scripts/lib/renderers/copilot.mjs';
 import { renderCursor } from '../scripts/lib/renderers/cursor.mjs';
 import { renderOhMyPi } from '../scripts/lib/renderers/oh-my-pi.mjs';
 import { renderOpencode } from '../scripts/lib/renderers/opencode.mjs';
@@ -82,13 +83,6 @@ test('opencode: preserves match', () => {
     assert.equal(matter(renderOpencode(rule)).data.match, 'all');
 });
 
-// ── Body preservation ────────────────────────────────────────────────────
-test('all renderers preserve the rule body verbatim', () => {
-    for (const render of [renderAntigravity, renderPiAgent, renderOhMyPi, renderOpencode]) {
-        assert.match(render(baseRule), /- No any\./);
-    }
-});
-
 // ── Cursor ───────────────────────────────────────────────────────────────
 test('cursor: emits description, globs as a joined string, and alwaysApply', () => {
     const fm = matter(renderCursor(baseRule)).data;
@@ -138,4 +132,52 @@ test('claude-code: a rule with nothing to declare compiles to body-only Markdown
 test('a single glob string becomes a one-element paths array', () => {
     const rule = { ...baseRule, data: { ...baseRule.data, globs: '**/*.ts' } };
     assert.deepEqual(matter(renderClaudeRules(rule)).data.paths, ['**/*.ts']);
+});
+
+// ── GitHub Copilot ───────────────────────────────────────────────────────
+test('copilot: joins globs into the comma-separated applyTo string', () => {
+    const fm = matter(renderCopilot(baseRule)).data;
+    assert.equal(fm.applyTo, '**/*.ts,**/*.tsx');
+    assert.equal(fm.description, 'Rules for TS.');
+});
+
+test('copilot: a rule with no globs applies to every file, explicitly', () => {
+    const rule = { slug: 'x', data: { name: 'x', description: 'd' }, body: '# X\n\n- rule.' };
+    const fm = matter(renderCopilot(rule)).data;
+    assert.equal(fm.applyTo, '**', 'applyTo is never omitted — Copilot would drop the file');
+});
+
+test('copilot: alwaysApply suppresses globs, which alwaysApply overrides', () => {
+    const rule = { ...baseRule, data: { ...baseRule.data, alwaysApply: true } };
+    assert.equal(matter(renderCopilot(rule)).data.applyTo, '**');
+});
+
+test('copilot: a single glob string passes through unchanged', () => {
+    const rule = { ...baseRule, data: { ...baseRule.data, globs: '**/*.ts' } };
+    assert.equal(matter(renderCopilot(rule)).data.applyTo, '**/*.ts');
+});
+
+test('copilot: does not emit keys Copilot does not document', () => {
+    const rule = {
+        ...baseRule,
+        data: { ...baseRule.data, alwaysApply: false, trigger: 'glob', match: 'all' },
+    };
+    const fm = matter(renderCopilot(rule)).data;
+    assert.deepEqual(Object.keys(fm).sort(), ['applyTo', 'description']);
+});
+
+// ── Body preservation ────────────────────────────────────────────────────
+test('all renderers preserve the rule body verbatim', () => {
+    const renderers = [
+        renderAntigravity,
+        renderPiAgent,
+        renderOhMyPi,
+        renderOpencode,
+        renderCursor,
+        renderClaudeRules,
+        renderCopilot,
+    ];
+    for (const render of renderers) {
+        assert.match(render(baseRule), /- No any\./);
+    }
 });
