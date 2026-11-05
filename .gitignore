@@ -153,3 +153,19 @@ mise.local.toml
 
 integrations/*.md
 integrations/*/
+
+# Install destinations. `mise run install` writes compiled rules here; they are
+# build output of `rules/`, not source. Without these, a contributor's first
+# install leaves seven untracked harness directories that nothing explains.
+.agents/rules/
+.pi/agent/rules/
+.omp/rules/
+.opencode/rules/
+.cursor/rules/
+.claude/rules/
+.github/instructions/
+
+# Written by `install` when it registers the `opencode-rules` plugin and no
+# OpenCode config already registers plugins. It names a plugin for the machine
+# that ran the install, so it is not source. Delete the leading slash to commit it.
+opencode.json

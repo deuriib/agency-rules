@@ -184,6 +184,35 @@
           "paths": "array<string>"
         }
       }
+    },
+    "copilot": {
+      "id": "copilot",
+      "label": "GitHub Copilot",
+      "format": "md-copilot-instructions",
+      "installKind": "per-rule",
+      "integrationPath": "{slug}.instructions.md",
+      "detect": {
+        "dirs": [
+          ".github/instructions",
+          ".copilot"
+        ],
+        "files": [
+          ".github/copilot-instructions.md"
+        ]
+      },
+      "dest": {
+        "project": ".github/instructions/{slug}.instructions.md",
+        "user": "~/.copilot/instructions/{slug}.instructions.md"
+      },
+      "frontmatter": {
+        "required": [
+          "applyTo"
+        ],
+        "map": {
+          "applyTo": "string",
+          "description": "string"
+        }
+      }
     }
   }
 }

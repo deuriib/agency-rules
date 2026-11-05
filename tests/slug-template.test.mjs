@@ -58,6 +58,7 @@ test('harness ids are the agent tool ids', () => {
     assert.deepEqual(Object.keys(tools.harnesses).sort(), [
         'antigravity',
         'claudeCode',
+        'copilot',
         'cursor',
         'ohMyPi',
         'opencode',

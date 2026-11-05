@@ -11,7 +11,7 @@ _.path = ["./node_modules/.bin"]
 # ── Setup ─────────────────────────────────────────────────────────────
 [tasks.setup]
 description = "Install Node dependencies"
-run = "npm install"
+run = "npm ci"
 
 # ── Format & lint (Biome) ─────────────────────────────────────────────
 [tasks.fmt]
@@ -25,6 +25,14 @@ run = "biome lint ."
 [tasks.check]
 description = "Format, lint, and organize imports (write mode)"
 run = "biome check --write ."
+
+# Read-only twin, used by `ci`. `check` writes, so a `ci` that depended on it
+# could rewrite the tree it was meant to verify: the documented Test step would
+# pass while having changed the files it judged. CI runs `biome ci` for the same
+# reason, and `tests/ci-parity.test.mjs` holds the two together.
+[tasks."check:ci"]
+description = "Verify formatting and linting without writing"
+run = "biome ci"
 
 # ── Scaffold ──────────────────────────────────────────────────────────
 [tasks.create-rule]
@@ -40,13 +48,13 @@ run = "node bin/agency-rules.mjs validate"
 [tasks.eval]
 description = "Score textual overlap between rules (fails above the gate)"
 run = "node bin/agency-rules.mjs eval"
-sources = ["rules/**/*.md", "scripts/lib/overlap.mjs"]
+sources = ["rules/**/*.md", "scripts/eval.mjs", "scripts/lib/overlap.mjs", "scripts/lib/contradictions.mjs", "scripts/lib/paths.mjs", "scripts/lib/cli-rules.mjs"]
 
 # ── Conversion ────────────────────────────────────────────────────────
 [tasks.convert]
 description = "Compile rules/ into each harness's native format"
 run = "node bin/agency-rules.mjs convert"
-sources = ["rules/**/*.md", "tools.json", "scripts/lib/**/*.mjs"]
+sources = ["rules/**/*.md", "tools.json", "scripts/convert.mjs", "scripts/lib/**/*.mjs"]
 outputs = ["integrations/**/*"]
 
 [tasks."convert:dry-run"]
@@ -75,8 +83,8 @@ run = "node bin/agency-rules.mjs list"
 
 # ── CI composition ────────────────────────────────────────────────────
 [tasks.ci]
-description = "Full pipeline: validate → eval → check → convert → test"
-depends = ["validate", "eval", "check", "convert", "test"]
+description = "Full pipeline: validate → eval → check:ci → convert → test"
+depends = ["validate", "eval", "check:ci", "convert", "test"]
 
 [tasks.release]
 description = "Trigger the release workflow on GitHub (requires gh CLI)"

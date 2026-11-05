@@ -24,13 +24,17 @@ Everything else (Node version, `npm ci`, tasks) is handled by mise.
 ## Setup
 
 ```bash
-git clone https://github.com/<your-org>/agency-rules.git
+git clone https://github.com/deuriib/agency-rules.git
 cd agency-rules
 mise install          # installs Node 22 and runs `npm ci`
 mise run ci           # verifies the baseline is green
 ```
 
 If `mise run ci` fails on a fresh clone, that's a bug — please open an issue.
+
+`mise` pins Node 22, so the version you get is the version CI gets. If you run
+the suite outside mise, node 21 or newer is required: `mise run test` expands a
+`tests/**/*.test.mjs` glob, which `node --test` only understands from 21 up.
 
 ---
 
@@ -39,9 +43,10 @@ If `mise run ci` fails on a fresh clone, that's a bug — please open an issue.
 1. **Branch** from `main`: `git switch -c feat/my-rule`.
 2. **Edit** files under `rules/` (or `scripts/lib/renderers/` for a new
    harness). To start a rule, scaffold it:
-   `mise run create-rule -- api-review` then fill in the description and the
-   placeholder bullets. The generator refuses a duplicate slug and a missing
-   description.
+   `mise run create-rule -- api-review --description "Use when reviewing REST endpoints."`
+   then fill in the placeholder bullets. The generator refuses a duplicate slug
+   and a missing description, and it will not prompt for one when stdin is not a
+   terminal.
 3. **Format + lint**: `mise run check` (Biome, write mode — fixes automatically).
 4. **Validate**: `mise run validate`.
 5. **Convert**: `mise run convert` and inspect `integrations/`.

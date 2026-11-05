@@ -1,5 +1,6 @@
 import { renderAntigravity } from './antigravity.mjs';
 import { renderClaudeRules } from './claude-code.mjs';
+import { renderCopilot } from './copilot.mjs';
 import { renderCursor } from './cursor.mjs';
 import { renderOhMyPi } from './oh-my-pi.mjs';
 import { renderOpencode } from './opencode.mjs';
@@ -13,4 +14,5 @@ export const renderers = {
     'md-plugin': renderOpencode,
     'md-cursor-mdc': renderCursor,
     'md-claude-rules': renderClaudeRules,
+    'md-copilot-instructions': renderCopilot,
 };

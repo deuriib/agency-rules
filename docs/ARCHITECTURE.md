@@ -1,7 +1,7 @@
 # Architecture
 
 This document explains how `agency-rules` turns one set of generic rules into
-four native harness formats, and why the pipeline is shaped the way it is.
+seven native harness formats, and why the pipeline is shaped the way it is.
 
 ---
 
@@ -93,7 +93,10 @@ one test. The engine, installer, and validator never change.
   manifest that lists no files is treated as a broken build rather than an
   empty install.
 - **Locked toolchain.** `mise.lock` pins exact versions of Node and any
-  installed CLIs. CI uses `mise install --locked` to fail on drift.
+  installed CLIs, so a version bump is a reviewable diff rather than a drifting
+  cache. CI installs the pinned toolchain through `jdx/mise-action`; `--locked`
+  is not passed there today, so drift is caught by the lock diff and by a failing
+  build rather than by a flag.
 
 ---
 
