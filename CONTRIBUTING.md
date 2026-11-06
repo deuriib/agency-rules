@@ -26,7 +26,7 @@ Everything else (Node version, `npm ci`, tasks) is handled by mise.
 ```bash
 git clone https://github.com/deuriib/agency-rules.git
 cd agency-rules
-mise install          # installs Node 22 and runs `npm ci`
+mise install          # installs Node 22, uv, and Biome, then runs `npm ci`
 mise run ci           # verifies the baseline is green
 ```
 
@@ -52,11 +52,13 @@ the suite outside mise, node 21 or newer is required: `mise run test` expands a
 5. **Convert**: `mise run convert` and inspect `integrations/`.
    Use `mise run convert:dry-run` first if you just want to preview.
 6. **Test**: `mise run test`.
-7. **Commit** using Conventional Commits (see below).
-8. **Push** and open a PR.
+7. **Docs**: `mise run docs:build` — regenerates the derived pages and builds the
+   site in strict mode. Preview with `mise run docs:serve`.
+8. **Commit** using Conventional Commits (see below).
+9. **Push** and open a PR.
 
-`mise run ci` runs the whole pipeline — `validate`, `eval`, `check`, `convert`,
-`test` — in that order. Run it before pushing.
+`mise run ci` runs the whole pipeline — `validate`, `eval`, `check:ci`,
+`convert`, `test`, and `docs:build` — in that order. Run it before pushing.
 
 ### Checking a rule set for duplication
 
@@ -88,6 +90,39 @@ INTEGRATIONS_DIR=$OLDPWD/integrations node $OLDPWD/bin/agency-rules.mjs \
 
 Run it without `--dry-run` twice: the second run should report every file as
 `unchanged` and write nothing.
+
+---
+
+## Documentation site
+
+The documentation is published at <https://deuriib.github.io/agency-rules/> and
+built with MkDocs Material. `mkdocs.yml` holds the theme and navigation; the
+pages live in `docs/`.
+
+- `mise run docs:build` generates the derived pages and builds `site/` in strict
+  mode — a broken internal link or a nav entry with no page fails the build.
+- `mise run docs:serve` runs the same build with live reload at
+  <http://127.0.0.1:8000>.
+
+Several pages are derived, not written: the rule library (`docs/rules/`), the
+harness reference (`docs/reference/harnesses.md`), and the mirrored
+`CONTRIBUTING.md`, `SECURITY.md`, and `CHANGELOG.md`. `scripts/gen-docs.mjs`
+builds them from `rules/`, `tools.json`, and the root Markdown files, so there is
+nothing to keep in sync by hand. They are gitignored: never commit them, and
+never edit a generated page — edit the source it names.
+
+A new rule needs no navigation edit: it appears in the rule library on the next
+build. A new hand-written page does need a `nav` entry, and
+`tests/docs.test.mjs` fails when a page is left out.
+
+The deploy runs from `.github/workflows/docs.yml` on every push to `main`. Pages
+must be enabled once for the repository: Settings → Pages → Source =
+"GitHub Actions".
+
+The Python toolchain is pinned in `requirements-docs.txt`. To bump Material,
+recompile the lock from a single requirement —
+`printf 'mkdocs-material==<version>\n' | uv pip compile - -o requirements-docs.txt`
+— then rebuild the site.
 
 ---
 
@@ -128,8 +163,10 @@ Reviewers check:
 3. **Renderer behavior** — for harness changes, output must be
    byte-identical across runs.
 4. **Tests** — new renderers come with a test in `tests/convert.test.mjs`.
-5. **No generated files committed** — `integrations/` is gitignored. Do not
-   `git add -f` it.
+5. **Docs** — `mise run docs:build` passes. New rules appear in the generated
+   library automatically; a new page needs a `nav` entry in `mkdocs.yml`.
+6. **No generated files committed** — `integrations/`, `site/`, and the generated
+   docs pages are gitignored. Do not `git add -f` them.
 
 ---
 

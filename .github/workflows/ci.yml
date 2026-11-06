@@ -32,6 +32,12 @@ jobs:
       - name: Run tests
         run: mise run test
 
+      # The site is part of the deliverable: the rule library is generated from
+      # `rules/`, so a rule that breaks the generator or a nav entry that points
+      # at nothing has to fail the pull request, not the deploy after merge.
+      - name: Build documentation
+        run: mise run docs:build
+
       # M8: every command the docs tell a user to run, executed. The ledger in
       # `tests/documented-commands.test.mjs` fails the build when a documented
       # command has no claim, so this step and that ledger move together.

@@ -2,6 +2,8 @@
 
 **Write rules once. Run them everywhere.**
 
+[![Documentation](https://img.shields.io/badge/docs-online-4f46e5)](https://deuriib.github.io/agency-rules/)
+
 `agency-rules` compiles a single set of generic Markdown rules into the
 native formats expected by **Google Antigravity**, **pi-agent**,
 **oh-my-pi (omp)**, **OpenCode** (via the [opencode-rules](https://github.com/frap129/opencode-rules) plugin),
@@ -124,9 +126,9 @@ steps, one owner each — the same six the DX runbook gates on
 | # | Step | Command | Owner |
 | --- | --- | --- | --- |
 | 1 | **Clone** | `git clone https://github.com/deuriib/agency-rules.git` | DX Engineer |
-| 2 | **Bootstrap** | `mise install` — pins Node 22 + Biome, then `npm ci` runs from the `postinstall` hook | Platform Engineer |
+| 2 | **Bootstrap** | `mise install` — pins Node 22, uv, and Biome, then `npm ci` runs from the `postinstall` hook | Platform Engineer |
 | 3 | **Run** | `mise run convert` — compiles `rules/` → `integrations/<harness>/` | Platform Engineer |
-| 4 | **Test** | `mise run ci` — validate → eval → lint → convert → test | Developer Tooling Engineer |
+| 4 | **Test** | `mise run ci` — validate → eval → lint → convert → test → docs | Developer Tooling Engineer |
 | 5 | **Deploy** | `mise run install --all --scope project` | DevOps Automator |
 | 6 | **Observe** | `mise run list --harness copilot` — every row reads `✅ synced` | SRE |
 
@@ -161,14 +163,17 @@ writes nothing rather than creating a second file that would shadow it.
 
 ```
 agency-rules/
-├── rules/              ← source of truth (Markdown + YAML frontmatter)
-├── integrations/       ← compiled output (generated, gitignored)
-├── bin/                ← the CLI entry point
-├── scripts/            ← convert, install, validate + renderers
-├── tests/              ← node:test suites: renderers, CLI contract, documented path
-├── docs/               ← architecture, spec, extension guide, DX evidence
-├── tools.json          ← the conversion contract
-└── mise.toml           ← toolchain + tasks
+├── rules/                  ← source of truth (Markdown + YAML frontmatter)
+├── integrations/           ← compiled output (generated, gitignored)
+├── bin/                    ← the CLI entry point
+├── scripts/                ← convert, install, validate, docs generator + renderers
+├── tests/                  ← node:test suites: renderers, CLI contract, docs, documented path
+├── docs/                   ← product docs + the MkDocs site source
+├── hooks/                  ← MkDocs build hook (edit links on generated pages)
+├── mkdocs.yml              ← site config (Material theme)
+├── requirements-docs.txt   ← pinned MkDocs toolchain (uv)
+├── tools.json              ← the conversion contract
+└── mise.toml               ← toolchain + tasks
 ```
 
 ---
@@ -194,7 +199,9 @@ All commands go through mise:
 | `mise run install` | Sync compiled output into harness directories |
 | `mise run install:dry-run` | Preview which files `install` would copy (no writes) |
 | `mise run test` | Run the Node test suite |
-| `mise run ci` | Full pipeline (`validate` → `eval` → `check:ci` → `convert` → `test`), read-only |
+| `mise run docs:build` | Generate the rule library, then build the docs site into `site/` |
+| `mise run docs:serve` | Serve the docs site locally with live reload |
+| `mise run ci` | Full pipeline (`validate` → `eval` → `check:ci` → `convert` → `test` → `docs:build`), read-only |
 
 See `mise tasks` for the up-to-date list.
 
@@ -300,6 +307,14 @@ The conversion engine itself never changes.
 
 ## Documentation
 
+The full documentation is published at
+**<https://deuriib.github.io/agency-rules/>** — built with MkDocs Material from
+the pages in `docs/`, and deployed by `.github/workflows/docs.yml`.
+
+- [Installation and first run](docs/getting-started.md) — prerequisites, compile, install, verify.
+- [CLI reference](docs/cli.md) — every command, flag, environment variable, and exit code.
+- [Rule library](https://deuriib.github.io/agency-rules/rules/) — the generated catalog of every rule in `rules/`, built by `mise run docs:build`.
+- [Harness reference](https://deuriib.github.io/agency-rules/reference/harnesses/) — generated from `tools.json`, with every format and destination.
 - [Architecture](docs/ARCHITECTURE.md) — data flow, contracts, caching.
 - [Rule spec](docs/RULE-SPEC.md) — the neutral frontmatter format.
 - [Adding a harness](docs/ADDING-A-HARNESS.md) — extension guide.

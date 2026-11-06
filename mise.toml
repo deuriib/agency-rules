@@ -1,5 +1,6 @@
 [tools]
 node = "22"
+uv = "0.13" # Runs the pinned MkDocs toolchain for the docs site
 "npm:@biomejs/biome" = "2.5.0" # Pinned for reproducibility
 
 [env]
@@ -81,10 +82,25 @@ run = "node --test 'tests/**/*.test.mjs'"
 description = "List all available rules"
 run = "node bin/agency-rules.mjs list"
 
+# ── Documentation site ────────────────────────────────────────────────
+[tasks."docs:gen"]
+description = "Generate the rule library, harness reference, and mirrored pages"
+run = "node scripts/gen-docs.mjs"
+
+[tasks."docs:build"]
+description = "Build the MkDocs site into site/ (strict)"
+depends = ["docs:gen"]
+run = "uv run --no-project --with-requirements requirements-docs.txt mkdocs build --strict"
+
+[tasks."docs:serve"]
+description = "Serve the MkDocs site locally with live reload"
+depends = ["docs:gen"]
+run = "uv run --no-project --with-requirements requirements-docs.txt mkdocs serve"
+
 # ── CI composition ────────────────────────────────────────────────────
 [tasks.ci]
-description = "Full pipeline: validate → eval → check:ci → convert → test"
-depends = ["validate", "eval", "check:ci", "convert", "test"]
+description = "Full pipeline: validate → eval → check:ci → convert → test → docs:build"
+depends = ["validate", "eval", "check:ci", "convert", "test", "docs:build"]
 
 [tasks.release]
 description = "Trigger the release workflow on GitHub (requires gh CLI)"
