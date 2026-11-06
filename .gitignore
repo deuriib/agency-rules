@@ -165,6 +165,11 @@ integrations/*/
 .claude/rules/
 .github/instructions/
 
+# Agent roster written by the agency-agents installer, not by this repo. It is
+# machine-local output, so a contributor running that installer sees an untracked
+# `.pi/` that this project does not own.
+.pi/agents/
+
 # Written by `install` when it registers the `opencode-rules` plugin and no
 # OpenCode config already registers plugins. It names a plugin for the machine
 # that ran the install, so it is not source. Delete the leading slash to commit it.
