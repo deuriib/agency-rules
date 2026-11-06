@@ -30,6 +30,9 @@ const BIN = join(ROOT, 'bin', 'agency-rules.mjs');
 const DOC_FILES = [
     'README.md',
     'CONTRIBUTING.md',
+    'docs/index.md',
+    'docs/getting-started.md',
+    'docs/cli.md',
     'docs/ADDING-A-HARNESS.md',
     'docs/ARCHITECTURE.md',
     'docs/RULE-SPEC.md',
@@ -220,6 +223,7 @@ const EXECUTED_BY_WORKFLOW = [
     { covers: ['mise|list|--harness'] },
     { covers: ['mise|create-rule|--description'] },
     { covers: ['mise|check:ci|'] },
+    { covers: ['mise|docs:build|'] },
 ];
 
 /**
@@ -263,6 +267,10 @@ const DECLARED = [
     {
         signature: 'mise|install|--scope',
         reason: 'the anti-pattern the `--all` paragraph explains; the no-op it describes is asserted by `tests/documented-path.test.mjs`, which needs an empty HOME to reach that branch',
+    },
+    {
+        signature: 'mise|docs:serve|',
+        reason: 'starts a long-running preview server with live reload; CI builds the same site with `mise run docs:build`',
     },
     {
         // One class, one declaration: the release procedure inspects the registry,

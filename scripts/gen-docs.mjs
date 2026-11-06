@@ -1,0 +1,276 @@
+#!/usr/bin/env node
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { stringify as yamlStringify } from 'yaml';
+import { readRules } from './lib/frontmatter.mjs';
+import { titleize } from './lib/rule-template.mjs';
+
+const ROOT = resolve(import.meta.dirname, '..');
+
+/**
+ * Paths under `docs/` this script owns.
+ *
+ * The rule library is deleted before it is written, so a renamed or deleted
+ * rule cannot leave a page behind that the index no longer links. The other
+ * pages are mirrors of root files, generated on every build so the site cannot
+ * drift from the GitHub copy.
+ */
+export const GENERATED = {
+    ruleDir: 'rules',
+    pages: ['reference/harnesses.md', 'contributing.md', 'security.md', 'changelog.md'],
+};
+
+/** Root files mirrored into the site, with the link rewrites that keep them valid. */
+const MIRRORED = [
+    {
+        source: 'CONTRIBUTING.md',
+        target: 'contributing.md',
+        links: [
+            ['(docs/', '('],
+            ['(SECURITY.md)', '(security.md)'],
+        ],
+    },
+    { source: 'SECURITY.md', target: 'security.md', links: [] },
+    { source: 'CHANGELOG.md', target: 'changelog.md', links: [] },
+];
+
+/** A table cell that survives pipes, which rule types contain. */
+function cell(value) {
+    return String(value).replaceAll('|', '\\|').replaceAll('\n', ' ');
+}
+
+/** A code span inside a table cell. */
+function code(value) {
+    return `\`${cell(value)}\``;
+}
+
+function frontmatter(data) {
+    return `---\n${yamlStringify(data).trimEnd()}\n---\n`;
+}
+
+function categoryOf(rule) {
+    return rule.source.includes('/') ? rule.source.split('/')[0] : 'uncategorized';
+}
+
+function categoryLabel(category) {
+    return category.charAt(0).toUpperCase() + category.slice(1);
+}
+
+function titleOf(rule) {
+    return rule.body.match(/^#\s+(.+)$/m)?.[1].trim() ?? titleize(rule.slug);
+}
+
+/** Frontmatter fields other than the two every page already shows. */
+function frontmatterSummary(data) {
+    const fields = Object.entries(data)
+        .filter(([key]) => key !== 'name' && key !== 'description')
+        .map(([key, value]) => code(`${key}: ${JSON.stringify(value)}`));
+    return fields.length > 0 ? fields.join(', ') : '—';
+}
+
+async function writePage(outDir, relativePath, contents) {
+    const target = join(outDir, relativePath);
+    await mkdir(dirname(target), { recursive: true });
+    await writeFile(target, `${contents.trimEnd()}\n`);
+}
+
+function renderRulePage(rule, repo) {
+    const category = categoryOf(rule);
+    const data = { title: titleOf(rule) };
+    if (rule.data.description) data.description = rule.data.description;
+
+    const metadata = [
+        '| Field | Value |',
+        '| --- | --- |',
+        `| **Category** | [${categoryLabel(category)}](index.md#${category}) |`,
+        `| **Description** | ${cell(rule.data.description ?? '—')} |`,
+        `| **Frontmatter** | ${frontmatterSummary(rule.data)} |`,
+        `| **Source** | [\`rules/${rule.source}\`](${repo}/blob/main/rules/${rule.source}) |`,
+        `| **Compiled for** | every harness in [\`tools.json\`](${repo}/blob/main/tools.json) — see the [harness reference](../reference/harnesses.md) |`,
+    ];
+
+    return [
+        frontmatter(data).trimEnd(),
+        '',
+        rule.body,
+        '',
+        '---',
+        '',
+        '## Rule metadata',
+        '',
+        ...metadata,
+    ].join('\n');
+}
+
+function renderRuleIndex(rules, repo) {
+    const groups = new Map();
+    for (const rule of rules) {
+        const category = categoryOf(rule);
+        if (!groups.has(category)) groups.set(category, []);
+        groups.get(category).push(rule);
+    }
+    const categories = [...groups.keys()].sort();
+
+    const counts = [
+        '| Category | Rules |',
+        '| --- | --- |',
+        ...categories.map(
+            (category) =>
+                `| [${categoryLabel(category)}](#${category}) | ${groups.get(category).length} |`,
+        ),
+        `| **Total** | **${rules.length}** |`,
+    ];
+
+    const sections = categories.flatMap((category) => [
+        `## ${categoryLabel(category)}`,
+        '',
+        ...groups
+            .get(category)
+            .sort((a, b) => a.slug.localeCompare(b.slug))
+            .map(
+                (rule) =>
+                    `- **[${titleOf(rule)}](${rule.slug}.md)** — ${cell(rule.data.description ?? 'No description provided.')}`,
+            ),
+        '',
+    ]);
+
+    return [
+        '# Rule Library',
+        '',
+        'Every rule shipped in `rules/`, grouped by category. Each page renders the',
+        'body exactly as the compiler emits it, followed by the frontmatter that',
+        'decides when a harness loads it and a link to the source file.',
+        '',
+        `Every rule compiles to every [harness](../reference/harnesses.md) declared in`,
+        `[\`tools.json\`](${repo}/blob/main/tools.json). The library is generated by`,
+        '`scripts/gen-docs.mjs` — add a rule under `rules/` and it appears here on the',
+        'next build.',
+        '',
+        ...counts,
+        '',
+        ...sections,
+    ].join('\n');
+}
+
+function renderHarnessPage(tools, repo) {
+    const entries = Object.entries(tools.harnesses);
+
+    const overview = [
+        '| ID | Product | Format | Project destination | User destination |',
+        '| --- | --- | --- | --- | --- |',
+        ...entries.map(
+            ([id, harness]) =>
+                `| [${code(id)}](#${id.toLowerCase()}) | ${cell(harness.label)} | ${code(harness.format)} | ${code(harness.dest?.project ?? '—')} | ${code(harness.dest?.user ?? '—')} |`,
+        ),
+    ];
+
+    const detail = entries.flatMap(([id, harness]) => {
+        const rows = [
+            ['Format', code(harness.format)],
+            ['Install kind', code(harness.installKind)],
+            ['Integration path', code(harness.integrationPath)],
+            ['Project destination', code(harness.dest?.project ?? '—')],
+            ['User destination', code(harness.dest?.user ?? '—')],
+            ['Detected directories', (harness.detect?.dirs ?? []).map(code).join(', ') || '—'],
+            ['Detected files', (harness.detect?.files ?? []).map(code).join(', ') || '—'],
+            ['File extensions', (harness.extensions ?? []).map(code).join(', ') || '—'],
+        ];
+
+        const frontmatterRows = Object.entries(harness.frontmatter?.map ?? {}).map(
+            ([field, accepts]) => `| ${code(field)} | ${code(accepts)} |`,
+        );
+        const required = (harness.frontmatter?.required ?? []).map(code).join(', ') || 'none';
+
+        const plugin = harness.plugin
+            ? [
+                  '### Plugin registration',
+                  '',
+                  '| Property | Value |',
+                  '| --- | --- |',
+                  `| Package | ${code(harness.plugin.package)} |`,
+                  `| Entry | ${code(harness.plugin.entry)} |`,
+                  `| Config key | ${code(harness.plugin.key)} |`,
+                  `| Project config | ${code(harness.plugin.config?.project ?? '—')} |`,
+                  `| User config | ${code(harness.plugin.config?.user ?? '—')} |`,
+                  '',
+              ]
+            : [];
+
+        return [
+            `## ${code(id)} — ${harness.label} { #${id.toLowerCase()} }`,
+            '',
+            '| Property | Value |',
+            '| --- | --- |',
+            ...rows.map(([label, value]) => `| ${label} | ${value} |`),
+            '',
+            `**Frontmatter required:** ${required}`,
+            '',
+            ...(frontmatterRows.length > 0
+                ? ['| Field | Accepts |', '| --- | --- |', ...frontmatterRows, '']
+                : []),
+            ...plugin,
+        ];
+    });
+
+    return [
+        '# Harness Reference',
+        '',
+        'Generated from `tools.json`, the conversion contract. Every field below is',
+        'read by the compiler or the installer; a value that is not here does not',
+        'exist for the pipeline.',
+        '',
+        `Adding a harness is additive — one contract entry, one renderer, one test.`,
+        `See [Adding a Harness](../ADDING-A-HARNESS.md). The contract itself is`,
+        `[\`tools.json\`](${repo}/blob/main/tools.json).`,
+        '',
+        ...overview,
+        '',
+        ...detail,
+    ].join('\n');
+}
+
+async function mirrorPage(root, page) {
+    const source = await readFile(join(root, page.source), 'utf8');
+    const rewritten = page.links.reduce((text, [from, to]) => text.replaceAll(from, to), source);
+    const banner = `<!-- Generated from ${page.source} by scripts/gen-docs.mjs. Edit the root file. -->`;
+    return [banner, '', rewritten].join('\n');
+}
+
+/**
+ * Write every generated page under `outDir`.
+ *
+ * @param {{root?: string, outDir?: string}} [options]
+ * @returns {Promise<{rules: number, harnesses: number}>}
+ */
+export async function generateDocs({ root = ROOT, outDir = join(root, 'docs') } = {}) {
+    const pkg = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
+    const repo = pkg.repository.url.replace(/^git\+/, '').replace(/\.git$/, '');
+    const rules = await readRules(join(root, 'rules'));
+    const tools = JSON.parse(await readFile(join(root, 'tools.json'), 'utf8'));
+
+    await rm(join(outDir, GENERATED.ruleDir), { recursive: true, force: true });
+
+    await writePage(outDir, 'rules/index.md', renderRuleIndex(rules, repo));
+    for (const rule of rules) {
+        await writePage(outDir, `rules/${rule.slug}.md`, renderRulePage(rule, repo));
+    }
+    await writePage(outDir, 'reference/harnesses.md', renderHarnessPage(tools, repo));
+
+    for (const page of MIRRORED) {
+        await writePage(outDir, page.target, await mirrorPage(root, page));
+    }
+
+    return { rules: rules.length, harnesses: Object.keys(tools.harnesses).length };
+}
+
+const invokedDirectly =
+    process.argv[1] !== undefined &&
+    import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
+
+if (invokedDirectly) {
+    const { rules, harnesses } = await generateDocs();
+    process.stdout.write(
+        `Generated docs sources: ${rules} rule page(s), ${harnesses} harness(es).\n`,
+    );
+}

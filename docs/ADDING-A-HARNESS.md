@@ -150,6 +150,8 @@ your harness's expected format.
 - Add a row to the harness table in `README.md`.
 - Update the "Adding a rule — checklist" in `CONTRIBUTING.md` if the new
   harness changes requirements.
+- The [harness reference](https://deuriib.github.io/agency-rules/reference/harnesses/)
+  needs no edit: it is generated from `tools.json` by `scripts/gen-docs.mjs`.
 
 ---
 

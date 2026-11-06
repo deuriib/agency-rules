@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Every stall on the [Quick Start](../README.md#quick-start) path, in the order you
+Every stall on the [installation path](getting-started.md), in the order you
 hit it, with the exact output and the one command that clears it.
 
 | Symptom you can search for | Section |

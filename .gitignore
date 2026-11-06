@@ -148,6 +148,21 @@ vite.config.ts.timestamp-*
 # Turbo Repo
 .turbo
 
+# Documentation site build and generated sources. `mise run docs:gen` writes the
+# rule library, the harness reference, and the mirrored project pages; they are
+# derived from `rules/`, `tools.json`, and the root Markdown files, not source.
+site/
+docs/rules/
+docs/reference/harnesses.md
+docs/contributing.md
+docs/security.md
+docs/changelog.md
+
+# MkDocs imports the build hook at `hooks/generated_pages.py`; Python leaves
+# bytecode next to it after every build.
+__pycache__/
+*.pyc
+
 # mise
 mise.local.toml
 

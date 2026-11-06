@@ -1,0 +1,10 @@
+/* Long destination paths and frontmatter summaries in generated tables should
+   wrap rather than force the page to scroll sideways. */
+.md-typeset table:not([class]) {
+  display: table;
+  width: 100%;
+}
+
+.md-typeset table:not([class]) td code {
+  overflow-wrap: anywhere;
+}
