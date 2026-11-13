@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0](https://github.com/deuriib/agency-rules/compare/v0.21.0...v0.22.0) (2026-11-13)
+
+
+### Features
+
+* **rules:** add .NET, SQL, and Docker development rules ([#113](https://github.com/deuriib/agency-rules/issues/113)) ([369bca8](https://github.com/deuriib/agency-rules/commit/369bca8531695030d3265792a05115c1f93cafdd))
+
 ## [0.21.0](https://github.com/deuriib/agency-rules/compare/v0.20.0...v0.21.0) (2026-11-06)
 
 
