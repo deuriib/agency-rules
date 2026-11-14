@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0](https://github.com/deuriib/agency-rules/compare/v0.22.0...v0.23.0) (2026-11-14)
+
+
+### Features
+
+* **tui:** add interactive installer with --dest override ([#115](https://github.com/deuriib/agency-rules/issues/115)) ([12568c7](https://github.com/deuriib/agency-rules/commit/12568c78e56b288785925b7402a9099fad051c32))
+
 ## [0.22.0](https://github.com/deuriib/agency-rules/compare/v0.21.0...v0.22.0) (2026-11-13)
 
 
