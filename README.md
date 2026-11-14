@@ -66,7 +66,13 @@ npx agency-rules convert
 
 # Install rules interactively
 npx agency-rules install
+
+# Pick harnesses, scope, and rules in a terminal UI
+npx agency-rules tui
 ```
+
+In a terminal, a bare `agency-rules` with no subcommand opens the same UI; with `--help`,
+`--version`, or any subcommand it stays the parsed CLI.
 
 `new` refuses a slug that already exists, a slug that is not kebab-case, and a
 missing `--description` — the description is the only field a harness can match

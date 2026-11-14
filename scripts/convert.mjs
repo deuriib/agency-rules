@@ -4,6 +4,7 @@ import { defineCommand } from 'citty';
 import { readRulesOrExit, readToolsOrExit } from './lib/cli-rules.mjs';
 import { resolveIntegrationsDir, resolveRulesDir, resolveToolsPath } from './lib/paths.mjs';
 import { renderers } from './lib/renderers/index.mjs';
+import { sanitizeLine } from './lib/sanitize.mjs';
 import { substituteSlug } from './lib/slug-template.mjs';
 
 export default defineCommand({
@@ -37,7 +38,7 @@ export default defineCommand({
         const allRules = await readRulesOrExit(RULES_DIR);
 
         if (allRules.length === 0) {
-            console.error(`❌ No rules found in ${RULES_DIR}`);
+            console.error(`❌ No rules found in ${sanitizeLine(RULES_DIR)}`);
             process.exit(1);
         }
 
@@ -46,7 +47,7 @@ export default defineCommand({
             targetHarnesses = args.harness.split(',').map((s) => s.trim());
             for (const id of targetHarnesses) {
                 if (!tools.harnesses[id]) {
-                    console.error(`❌ Unknown harness: ${id}`);
+                    console.error(`❌ Unknown harness: ${sanitizeLine(id)}`);
                     process.exit(1);
                 }
             }
@@ -62,7 +63,9 @@ export default defineCommand({
                 (slug) => !allRules.some((r) => r.slug === slug),
             );
             if (missingRules.length > 0) {
-                console.warn(`⚠️  The following rules were not found: ${missingRules.join(', ')}`);
+                console.warn(
+                    `⚠️  The following rules were not found: ${missingRules.map(sanitizeLine).join(', ')}`,
+                );
             }
 
             if (targetRules.length === 0) {
@@ -72,7 +75,7 @@ export default defineCommand({
         }
 
         console.log(
-            `📚 Found ${targetRules.length} rule(s) in ${RULES_DIR}${dryRun ? ' (dry-run — nothing will be written)' : ''}\n`,
+            `📚 Found ${targetRules.length} rule(s) in ${sanitizeLine(RULES_DIR)}${dryRun ? ' (dry-run — nothing will be written)' : ''}\n`,
         );
 
         if (requestedRules) {
@@ -93,7 +96,11 @@ export default defineCommand({
         for (const id of targetHarnesses) {
             const harness = tools.harnesses[id];
             if (!renderers[harness.format]) {
-                console.error(`❌ No renderer for format "${harness.format}" (harness: ${id})`);
+                // `format` and the id both come from `tools.json`; unsanitized,
+                // an unknown format is a route to paint over the terminal.
+                console.error(
+                    `❌ No renderer for format "${sanitizeLine(harness.format)}" (harness: ${sanitizeLine(id)})`,
+                );
                 process.exit(1);
             }
         }
@@ -103,6 +110,9 @@ export default defineCommand({
             const render = renderers[harness.format];
             const harnessDir = join(INTEGRATIONS_DIR, id);
             const manifest = [];
+            // Log lines show the sanitized id; the directory keeps the raw one,
+            // because that is the path `install` reads back.
+            const displayId = sanitizeLine(id);
 
             // Full reset before writing. `integrations/` is a gitignored build
             // product, so an artifact whose rule was renamed or filtered out is
@@ -113,7 +123,7 @@ export default defineCommand({
             if (!dryRun) {
                 await rm(harnessDir, { recursive: true, force: true });
             } else {
-                console.log(`${prefix} would reset ${harnessDir}/`);
+                console.log(`${prefix} would reset ${sanitizeLine(harnessDir)}/`);
             }
 
             for (const rule of targetRules) {
@@ -121,7 +131,9 @@ export default defineCommand({
                 try {
                     output = render(rule, harness);
                 } catch (err) {
-                    console.error(`❌ ${id}: failed to render "${rule.slug}": ${err.message}`);
+                    console.error(
+                        `❌ ${displayId}: failed to render "${sanitizeLine(rule.slug)}": ${sanitizeLine(err.message)}`,
+                    );
                     process.exit(1);
                 }
 
@@ -153,11 +165,11 @@ export default defineCommand({
                 );
             }
 
-            console.log(`✅ ${id.padEnd(12)} → ${manifest.length} file(s)`);
+            console.log(`✅ ${displayId.padEnd(12)} → ${manifest.length} file(s)`);
             if (dryRun) {
                 for (const f of manifest) {
                     console.log(
-                        `${prefix} would write ${join(harnessDir, f.path)} (${f.size} bytes)`,
+                        `${prefix} would write ${sanitizeLine(join(harnessDir, f.path))} (${f.size} bytes)`,
                     );
                 }
             }

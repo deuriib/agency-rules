@@ -56,11 +56,38 @@ seven native harness formats, and why the pipeline is shaped the way it is.
 | **Renderers** | `scripts/lib/renderers/*.mjs` | Pure functions: `(rule, harness) → markdown string`. No I/O. |
 | **Installer** | `scripts/install.mjs` | Preflights every target (manifest + destination) before writing, copies compiled files to real destinations, registers plugins. A request it cannot fulfil fails before the first write. |
 | **Validator** | `scripts/validate.mjs` | Runs the schema and checks slug uniqueness before anything else runs. |
+| **TUI** | `scripts/tui.mjs`, `scripts/lib/tui/*.mjs` | Interactive front end for `install`: four steps over harnesses, scope, rules, and a review, then `convert` if the output is missing and `install` with every flag supplied. `scripts/lib/tui/` holds the pure filter, state, render, key, and sanitize modules plus one thin raw-mode driver. | 
 | **Overlap eval** | `scripts/eval.mjs`, `scripts/lib/overlap.mjs`, `scripts/lib/contradictions.mjs` | Two checks, because they catch different defects. **Overlap** scores shared phrasing and fails when a rule restates another. **Contradictions** finds the same subject with a different number — two rules stating one obligation as 60 days and 90 days pass an overlap check cleanly. Pure maths in the libraries, reporting in the command. |
 | **Orchestration** | `mise.toml` | Pins Node version, defines tasks, composes `ci`, wires the `postinstall` hook. |
 
 Each layer has exactly one job. Renderers never touch the filesystem; the
 engine never hardcodes a harness; the installer never renders.
+
+---
+
+## The TUI layer
+
+`scripts/tui.mjs` is a front end, not a second installer: it collects the same
+decisions `install`'s prompts collect, then calls `convert` and `install` with
+every flag filled in so neither re-enters its own interactive branch.
+
+Everything decidable lives in `scripts/lib/tui/` as pure functions — filtering,
+cursor and selection state, frame rendering, key mapping, and the sanitizer.
+`index.mjs` owns only the terminal: raw mode on `node:readline`, the alternate
+screen, one keypress loop, resize handling, and a restore that runs on confirm,
+back, quit, `SIGINT`, and `process.exit` from a downstream command.
+
+That split is the reason the TUI carries **no runtime dependency**. Ink, Enquirer,
+or `@inquirer` would each add a dependency tree and a React-shaped render model
+to draw a checkbox list, and neither would make the logic testable without a TTY —
+the pure modules here are tested directly. The precedent is
+`scripts/lib/selection.mjs`, where the numbered-menu parsing was extracted from
+`readline` for exactly this reason.
+
+Strings from `rules/` and `tools.json` reach the frame only through
+`lib/tui/sanitize.mjs`: a description containing an ESC byte is text nobody wrote
+as a terminal instruction, and the renderer adds the only escape sequences a
+frame contains.
 
 ---
 

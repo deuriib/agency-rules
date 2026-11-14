@@ -1,5 +1,5 @@
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import { defineCommand } from 'citty';
@@ -8,6 +8,7 @@ import { detectHarnesses, expandHome, pathExists } from './lib/detect.mjs';
 import { classifyInstall } from './lib/file-compare.mjs';
 import { parseJsonc } from './lib/jsonc.mjs';
 import { resolveFromCwd, resolveIntegrationsDir, resolveToolsPath } from './lib/paths.mjs';
+import { sanitizeLine } from './lib/sanitize.mjs';
 import { parseSelection, pickByIndices, renderMenu } from './lib/selection.mjs';
 import { substituteSlug } from './lib/slug-template.mjs';
 
@@ -37,11 +38,21 @@ export default defineCommand({
             type: 'boolean',
             description: 'Preview which files would be copied (no writes)',
         },
+        dest: {
+            type: 'string',
+            description:
+                'Install into this directory instead of the scope destinations (skips plugin registration)',
+        },
     },
     async run({ args }) {
         const dryRun = args['dry-run'];
         const tag = dryRun ? '[dry-run]' : '     ';
         const log = (msg) => console.log(`  ${tag} ${msg}`);
+
+        // An explicit destination replaces the scope column of tools.json, so the
+        // scope prompts and the scope lookup have nothing left to decide.
+        const destOverride =
+            typeof args.dest === 'string' && args.dest.trim() !== '' ? args.dest.trim() : null;
 
         const INTEGRATIONS_DIR = resolveIntegrationsDir();
         const TOOLS_PATH = resolveToolsPath();
@@ -59,14 +70,18 @@ export default defineCommand({
         let chosenExplicitly = Boolean(args.harness) || Boolean(args.all);
 
         // Interactive Mode
-        if (input.isTTY && ((!finalHarnesses && !forceAll) || !finalScope)) {
+        if (!destOverride && input.isTTY && ((!finalHarnesses && !forceAll) || !finalScope)) {
             const rl = createInterface({ input, output });
 
             if (!finalHarnesses && !forceAll) {
                 console.log('\n🎯 Select harnesses to install into:');
                 const keys = Object.keys(tools.harnesses);
                 keys.forEach((k, i) => {
-                    console.log(`  ${i + 1}) ${k} (${tools.harnesses[k].label})`);
+                    // The id and the label are `tools.json` data: a hostile
+                    // contract would otherwise paint over this menu.
+                    console.log(
+                        `  ${i + 1}) ${sanitizeLine(k)} (${sanitizeLine(tools.harnesses[k].label)})`,
+                    );
                 });
                 console.log(`  ${keys.length + 1}) Detect automatically`);
                 console.log(`  ${keys.length + 2}) All harnesses`);
@@ -107,8 +122,12 @@ export default defineCommand({
 
         if (!finalScope) finalScope = 'project';
 
-        if (!['project', 'user'].includes(finalScope)) {
-            console.error(`❌ Invalid --scope: ${finalScope} (use "project" or "user")`);
+        // With `--dest` the scope is only a label: the destination is explicit, so
+        // an unset scope is not an error and there is no column to validate against.
+        if (!destOverride && !['project', 'user'].includes(finalScope)) {
+            console.error(
+                `❌ Invalid --scope: ${sanitizeLine(finalScope)} (use "project" or "user")`,
+            );
             process.exit(1);
         }
 
@@ -116,7 +135,7 @@ export default defineCommand({
         if (finalHarnesses) {
             for (const id of finalHarnesses) {
                 if (!tools.harnesses[id]) {
-                    console.error(`❌ Unknown harness: ${id}`);
+                    console.error(`❌ Unknown harness: ${sanitizeLine(id)}`);
                     process.exit(1);
                 }
             }
@@ -131,8 +150,9 @@ export default defineCommand({
             }
         }
 
+        const destination = destOverride ? ` → ${destOverride}` : '';
         console.log(
-            `🔍 Targets: ${targets.join(', ')} (scope: ${finalScope})${dryRun ? ' — dry-run, no changes will be made' : ''}\n`,
+            `🔍 Targets: ${targets.map(sanitizeLine).join(', ')} (scope: ${sanitizeLine(finalScope)}${sanitizeLine(destination)})${dryRun ? ' — dry-run, no changes will be made' : ''}\n`,
         );
 
         // Preflight: resolve every target's manifest and destination before the
@@ -143,7 +163,7 @@ export default defineCommand({
         //    user watching a long install sees the problem before it copies.
         // 2. The failure check below can run before the loop, so a request that
         //    cannot be fulfilled never half-installs a fleet.
-        const plan = await planInstall(targets, tools, finalScope, INTEGRATIONS_DIR);
+        const plan = await planInstall(targets, tools, finalScope, INTEGRATIONS_DIR, destOverride);
         const available = plan.filter((entry) => !entry.skipped);
         const skipped = plan.length - available.length;
 
@@ -152,7 +172,10 @@ export default defineCommand({
         // Offering slugs from `rules/` instead would list rules that were never
         // compiled for the selected harness.
         let selectedRules = rulesToInstall;
-        if (input.isTTY && !selectedRules) {
+        // `--dest` skips this prompt for the same reason it skips the harness and
+        // scope menus: the run is scripted, and the default is already "all
+        // rules" (no filter).
+        if (!destOverride && input.isTTY && !selectedRules) {
             const slugs = slugsInPlan(available);
             if (slugs.length > 0) {
                 const rl = createInterface({ input, output });
@@ -164,14 +187,14 @@ export default defineCommand({
                 const parsed = parseSelection(answer, { length: slugs.length });
                 if (parsed.kind === 'invalid') {
                     console.error(
-                        `❌ Invalid selection "${parsed.token}" — expected 1-${slugs.length} or "all".`,
+                        `❌ Invalid selection "${sanitizeLine(parsed.token)}" — expected 1-${slugs.length} or "all".`,
                     );
                     process.exit(1);
                 }
                 if (parsed.kind === 'some') selectedRules = pickByIndices(parsed.indices, slugs);
                 if (selectedRules) {
                     console.log(
-                        `📚 Rules: ${selectedRules.length === slugs.length ? 'all' : selectedRules.join(', ')}\n`,
+                        `📚 Rules: ${selectedRules.length === slugs.length ? 'all' : selectedRules.map(sanitizeLine).join(', ')}\n`,
                     );
                 }
             }
@@ -190,7 +213,7 @@ export default defineCommand({
                 const missing = selectedRules.filter((slug) => !availableSlugs.has(slug));
                 if (missing.length > 0) {
                     console.warn(
-                        `⚠️  ${entry.id}: The following requested rules were not found in the compiled output: ${missing.join(', ')}`,
+                        `⚠️  ${sanitizeLine(entry.id)}: The following requested rules were not found in the compiled output: ${missing.map(sanitizeLine).join(', ')}`,
                     );
                 }
             }
@@ -207,16 +230,16 @@ export default defineCommand({
             const unmatched = selectedRules.filter((slug) => !matchedSlugs.has(slug));
             if (unmatched.length === selectedRules.length) {
                 failures.push(
-                    `none of the requested rules exist in the compiled output: ${unmatched.join(', ')}`,
+                    `none of the requested rules exist in the compiled output: ${unmatched.map(sanitizeLine).join(', ')}`,
                 );
             }
         }
         if (available.length === 0) {
             const reasons = plan.map(
                 (entry) =>
-                    `${entry.id} (${
+                    `${sanitizeLine(entry.id)} (${
                         entry.skipped === 'no-dest'
-                            ? `no dest for scope "${finalScope}" in tools.json`
+                            ? `no dest for scope "${sanitizeLine(finalScope)}" in tools.json`
                             : entry.skipped === 'empty-manifest'
                               ? 'manifest lists no files'
                               : 'no compiled output'
@@ -244,12 +267,12 @@ export default defineCommand({
             const { id, harness, srcDir, destTemplate, filesToCopy } = entry;
 
             if (filesToCopy.length === 0) {
-                console.log(`  ${tag} ${id}: no matching rules to install.`);
+                console.log(`  ${tag} ${sanitizeLine(id)}: no matching rules to install.`);
                 continue;
             }
 
             for (const { slug, path: relPath } of filesToCopy) {
-                const destPath = expandHome(substituteSlug(destTemplate, slug));
+                const destPath = resolveDest(destTemplate, slug);
                 const srcPath = join(srcDir, relPath);
 
                 // Compare before copying: rewriting an identical file bumps its
@@ -259,7 +282,7 @@ export default defineCommand({
 
                 if (status === 'unchanged') {
                     unchanged++;
-                    log(`${id}: ⏭️  unchanged (skipped) ${destPath}`);
+                    log(`${sanitizeLine(id)}: ⏭️  unchanged (skipped) ${sanitizeLine(destPath)}`);
                     continue;
                 }
 
@@ -268,15 +291,19 @@ export default defineCommand({
 
                 const verb = status === 'added' ? 'add' : 'update';
                 if (dryRun) {
-                    log(`${id}: would ${verb} ${destPath}`);
+                    log(`${sanitizeLine(id)}: would ${verb} ${sanitizeLine(destPath)}`);
                 } else {
                     await mkdir(dirname(destPath), { recursive: true });
                     await copyFile(srcPath, destPath);
-                    log(`${id}: ${status === 'added' ? '🆕 added' : '🔄 updated'} ${destPath}`);
+                    log(
+                        `${sanitizeLine(id)}: ${status === 'added' ? '🆕 added' : '🔄 updated'} ${sanitizeLine(destPath)}`,
+                    );
                 }
             }
 
-            if (harness.plugin) {
+            // A custom destination is not a harness directory, so registering the
+            // harness's plugin there would point it at files it never reads.
+            if (harness.plugin && !destOverride) {
                 const changed = await handlePlugin(id, harness.plugin, finalScope, dryRun, log);
                 if (changed) pluginChanges++;
             }
@@ -303,25 +330,40 @@ export default defineCommand({
  * A target that cannot be installed is recorded with a reason instead of being
  * dropped, because the caller has to tell "no compiled output" apart from "this
  * harness has no destination for this scope" when it reports the failure.
+ *
+ * `destOverride` replaces the per-scope destination with one directory chosen by
+ * the caller (`install --dest`), which is also why the scope is only a label in
+ * that mode.
  */
-async function planInstall(targets, tools, scope, integrationsDir) {
+async function planInstall(targets, tools, scope, integrationsDir, destOverride = null) {
     const entries = [];
 
     for (const id of targets) {
         const harness = tools.harnesses[id];
         const srcDir = join(integrationsDir, id);
+        // The id is `tools.json` data and the paths below are built from it, so
+        // every log line shows the display copy and every path keeps the raw one.
+        const displayId = sanitizeLine(id);
 
         if (!(await pathExists(srcDir))) {
             console.warn(
-                `⚠️  ${id}: no compiled output at ${srcDir}, skipping. Run "agency-rules convert" first.`,
+                `⚠️  ${displayId}: no compiled output at ${sanitizeLine(srcDir)}, skipping. Run "agency-rules convert" first.`,
             );
             entries.push({ id, harness, skipped: 'no-output' });
             continue;
         }
 
-        const destTemplate = harness.dest?.[scope];
+        // `--dest` names one directory for every target, so each target gets its
+        // own directory under it: four harnesses share `{slug}.md` as their
+        // `integrationPath`, and a flat layout would let the last one win and
+        // leave a re-run with nothing it can call "unchanged".
+        const destTemplate = destOverride
+            ? join(expandHome(destOverride), id, harness.integrationPath)
+            : harness.dest?.[scope];
         if (!destTemplate) {
-            console.warn(`⚠️  ${id}: no dest for scope "${scope}" in tools.json, skipping.`);
+            console.warn(
+                `⚠️  ${displayId}: no dest for scope "${sanitizeLine(scope)}" in tools.json, skipping.`,
+            );
             entries.push({ id, harness, skipped: 'no-dest' });
             continue;
         }
@@ -341,7 +383,9 @@ async function planInstall(targets, tools, scope, integrationsDir) {
                     : err instanceof SyntaxError
                       ? `invalid JSON: ${err.message}`
                       : err.message;
-            console.error(`❌ ${id}: cannot read ${manifestPath} (${reason}).`);
+            console.error(
+                `❌ ${displayId}: cannot read ${sanitizeLine(manifestPath)} (${sanitizeLine(reason)}).`,
+            );
             console.error('   Run "agency-rules convert" to rebuild the compiled output.');
             process.exit(1);
         }
@@ -354,7 +398,7 @@ async function planInstall(targets, tools, scope, integrationsDir) {
         // manifest; the installer should still refuse to call it a success.
         if (!Array.isArray(manifest.files) || manifest.files.length === 0) {
             console.warn(
-                `⚠️  ${id}: ${manifestPath} lists no files, skipping. Run "agency-rules convert" to rebuild it.`,
+                `⚠️  ${displayId}: ${sanitizeLine(manifestPath)} lists no files, skipping. Run "agency-rules convert" to rebuild it.`,
             );
             entries.push({ id, harness, skipped: 'empty-manifest' });
             continue;
@@ -364,7 +408,7 @@ async function planInstall(targets, tools, scope, integrationsDir) {
         // partial build has already been copied is a warning too late to act on.
         if (manifest.partial) {
             console.warn(
-                `⚠️  ${id}: compiled output is partial (\`_manifest.json\` has \`partial: true\`). ` +
+                `⚠️  ${displayId}: compiled output is partial (\`_manifest.json\` has \`partial: true\`). ` +
                     'Run a full "agency-rules convert" before installing, or the rules left out of the build stay stale.',
             );
         }
@@ -372,7 +416,57 @@ async function planInstall(targets, tools, scope, integrationsDir) {
         entries.push({ id, harness, srcDir, destTemplate, manifest, skipped: null });
     }
 
+    // Every write is now known, and it is still before the first one: a plan that
+    // would overwrite a copy or escape the directory the user named has to be
+    // refused while refusing still costs nothing.
+    if (destOverride) assertDestPlan(entries, destOverride);
+
     return entries;
+}
+
+/** The exact path one file is written to, with `~` and the slug resolved. */
+function resolveDest(destTemplate, slug) {
+    return expandHome(substituteSlug(destTemplate, slug));
+}
+
+/**
+ * Refuse a `--dest` plan in which two targets claim one path, or a template
+ * writes outside `--dest`.
+ *
+ * Namespacing by harness id already separates the built-in manifests. This is
+ * the check for the one place that is not built in: `integrationPath` comes from
+ * `tools.json`, so a third-party or hand-edited contract can still name `../`.
+ */
+function assertDestPlan(entries, destOverride) {
+    const root = resolve(expandHome(destOverride));
+    const inside = (path) => path === root || path.startsWith(`${root}${sep}`);
+    const owners = new Map();
+
+    for (const entry of entries) {
+        if (entry.skipped) continue;
+        for (const file of entry.manifest.files) {
+            const resolved = resolve(resolveDest(entry.destTemplate, file.slug));
+            const id = sanitizeLine(entry.id);
+            if (!inside(resolved)) {
+                console.error(
+                    `❌ ${id}: ${sanitizeLine(file.slug)} would be written outside --dest:`,
+                );
+                console.error(`   ${sanitizeLine(resolved)}`);
+                process.exit(1);
+            }
+            const owner = owners.get(resolved);
+            if (owner !== undefined) {
+                console.error(
+                    `❌ ${owner} and ${id} both target ${sanitizeLine(resolved)} under --dest.`,
+                );
+                console.error(
+                    '   `--dest` names one directory per harness; pick one harness per run.',
+                );
+                process.exit(1);
+            }
+            owners.set(resolved, id);
+        }
+    }
 }
 
 /** Union of every rule slug the selected harnesses have compiled. */
@@ -463,17 +557,18 @@ async function handlePlugin(id, plugin, scope, dry, logFn) {
     // OpenCode: a hardcoded `opencode.json` worked only while OpenCode was the
     // one harness with a plugin, and a hardcoded `plugin` kept writing the key
     // the schema had already deprecated.
+    const displayId = sanitizeLine(id);
     const configTemplate = plugin.config?.[scope];
     if (!configTemplate) {
         console.warn(
-            `⚠️  ${id}: no plugin config path for scope "${scope}" in tools.json, skipping plugin registration`,
+            `⚠️  ${displayId}: no plugin config path for scope "${sanitizeLine(scope)}" in tools.json, skipping plugin registration`,
         );
         return false;
     }
 
     const key = plugin.key;
     if (!key) {
-        console.warn(`⚠️  ${id}: no plugin key in tools.json, skipping plugin registration`);
+        console.warn(`⚠️  ${displayId}: no plugin key in tools.json, skipping plugin registration`);
         return false;
     }
 
@@ -489,26 +584,30 @@ async function handlePlugin(id, plugin, scope, dry, logFn) {
         const parsed = await readConfig(existing);
         if (!parsed) {
             console.warn(
-                `⚠️  ${id}: ${existing} is not valid JSON or JSONC, skipping plugin registration`,
+                `⚠️  ${displayId}: ${sanitizeLine(existing)} is not valid JSON or JSONC, skipping plugin registration`,
             );
             return false;
         }
 
         if (declaresEntry(parsed.config, keys, plugin.entry)) {
-            logFn(`${id}: plugin "${plugin.entry}" already registered in ${existing}`);
+            logFn(
+                `${displayId}: plugin "${sanitizeLine(plugin.entry)}" already registered in ${sanitizeLine(existing)}`,
+            );
             return false;
         }
 
         if (!parsed.editable) {
             console.warn(
-                `⚠️  ${id}: ${existing} is JSONC and is left untouched so its comments survive. ` +
-                    `Add "${plugin.entry}" to its "${key}" array by hand.`,
+                `⚠️  ${displayId}: ${sanitizeLine(existing)} is JSONC and is left untouched so its comments survive. ` +
+                    `Add "${sanitizeLine(plugin.entry)}" to its "${sanitizeLine(key)}" array by hand.`,
             );
             return false;
         }
 
         const current = existingPluginList(parsed.config, keys);
-        logFn(`${id}: ${dry ? 'would add' : 'added'} "${plugin.entry}" to ${existing}`);
+        logFn(
+            `${displayId}: ${dry ? 'would add' : 'added'} "${sanitizeLine(plugin.entry)}" to ${sanitizeLine(existing)}`,
+        );
 
         if (!dry) {
             const target = current?.key ?? key;
@@ -536,14 +635,14 @@ async function handlePlugin(id, plugin, scope, dry, logFn) {
             if (userList?.list.length) {
                 if (declaresEntry(userConfig.config, keys, plugin.entry)) {
                     logFn(
-                        `${id}: plugin "${plugin.entry}" is already registered in ${existingUser}, ` +
-                            `so ${configPath} was not created`,
+                        `${displayId}: plugin "${sanitizeLine(plugin.entry)}" is already registered in ${sanitizeLine(existingUser)}, ` +
+                            `so ${sanitizeLine(configPath)} was not created`,
                     );
                 } else {
                     console.warn(
-                        `⚠️  ${id}: ${existingUser} registers other plugins, and a project "${key}" array ` +
-                            `would replace them, so ${configPath} was not created. Add ` +
-                            `"${plugin.entry}" to ${existingUser} or to an existing project config.`,
+                        `⚠️  ${displayId}: ${sanitizeLine(existingUser)} registers other plugins, and a project "${sanitizeLine(key)}" array ` +
+                            `would replace them, so ${sanitizeLine(configPath)} was not created. Add ` +
+                            `"${sanitizeLine(plugin.entry)}" to ${sanitizeLine(existingUser)} or to an existing project config.`,
                     );
                 }
                 return false;
@@ -552,7 +651,7 @@ async function handlePlugin(id, plugin, scope, dry, logFn) {
     }
 
     logFn(
-        `${id}: ${dry ? 'would create and add' : 'created and added'} "${plugin.entry}" to ${configPath}`,
+        `${displayId}: ${dry ? 'would create and add' : 'created and added'} "${sanitizeLine(plugin.entry)}" to ${sanitizeLine(configPath)}`,
     );
 
     if (!dry) {
