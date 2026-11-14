@@ -107,17 +107,70 @@ mise run install --all --scope project
 | `--scope <scope>` | `project` \| `user` | `project` | Which destination column in `tools.json` to use. |
 | `--rules <slugs>` | string | all | Install only the named rules. |
 | `--all` | boolean | `false` | Ignore detection and target every declared harness. |
+| `--dest <dir>` | string | — | Install into this directory instead of the scope's harness directories. Each target writes to `<dir>/<harness-id>/<integrationPath>`, and plugin registration is skipped. |
 | `--dry-run` | boolean | `false` | Print the copy plan; write nothing. |
 
 With no `--harness`, no `--all`, and a terminal attached, the command asks three
 questions instead of guessing: harnesses, scope, and rules. Supplying the flags
 skips the prompts, so scripted runs never block.
 
+`--dest` replaces the scope column of `tools.json` with one directory you name,
+so it needs no `--scope` and skips the plugin registration that belongs to a
+harness config (`tui` uses it for its custom-path step):
+
+```bash
+npx agency-rules install --harness copilot --dest ./vendor/rules
+```
+
+Each target gets a directory of its own under `--dest` — the example above writes
+`vendor/rules/copilot/typescript.instructions.md`, i.e.
+`<dir>/<harness-id>/<integrationPath>`. Four harnesses declare
+`{slug}.md` as their `integrationPath`, so one shared directory would let the last
+target win and leave a re-run with nothing it can call "unchanged". A plan in
+which two targets claim one path, or in which an `integrationPath` from
+`tools.json` would write outside `--dest`, exits `1` before the first copy.
+
 Every target is preflighted before the first write: a `--rules` list that
 matches nothing, or an explicitly requested harness with no compiled output,
 exits `1` and leaves the harness configuration untouched. `install` with nothing
 auto-detected is a legitimate no-op and exits `0` — read the output rather than
 trusting the status code alone.
+
+## tui
+
+Install rules through a keyboard-driven screen instead of a numbered prompt.
+It needs a terminal: without a TTY it refuses and points at `install` and its
+flags.
+
+```bash
+npx agency-rules tui
+```
+
+Four steps, and each one can be walked back without losing the answers already
+given:
+
+1. **Harnesses** — the harnesses in `tools.json`, plus "Detect automatically"
+   (the harnesses present on this machine) and "All harnesses".
+2. **Scope** — `project`, `user`, or a custom directory (absolute or
+   `~`-relative), which is passed to `install` as `--dest`.
+3. **Rules** — filter and toggle individual rules. An empty selection installs
+   every rule, which is stated in the review rather than left to be inferred.
+4. **Review** — the harnesses, the destination, and the rule count, then Run or
+   Back. Back returns to the rule list with the ticks still in place.
+
+Missing compiled output is built first with `convert`, then the whole plan is
+handed to `install` with every flag filled in, so its own prompts never appear.
+
+| Key | Action |
+| --- | --- |
+| `↑` / `↓` | Move the cursor. |
+| `space`, `tab` | Toggle the item under the cursor. |
+| `/` | Open the filter; press it again to close it. |
+| `a` | Select every visible item. |
+| `c` | Clear the selection. |
+| `enter` | Confirm the step. |
+| `esc` | Go back one step. |
+| `ctrl+c` | Quit without installing. |
 
 ## list
 

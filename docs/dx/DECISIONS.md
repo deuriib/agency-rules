@@ -157,3 +157,35 @@ would measure it, rather than guessed.
 problem, a confirmed defect, or measured hours; the machine cost it adds to the
 72.9 s; and its escape hatch. A step justified with "it would be good" is a no
 with a reason — cheaper than a maybe forever.
+
+---
+
+## 2026-11-14 — The TUI is zero-dependency
+
+**Decision:** the interactive installer is built on `node:readline` raw mode plus
+pure render modules (`scripts/lib/tui/`), not on Ink, Enquirer, or `@inquirer`.
+
+**Why.** Three reasons, in the order they decided it:
+
+1. **Minimal-dependency philosophy.** The package ships four runtime
+   dependencies, and each one is a correctness surface — a parser, a schema
+   validator, a YAML reader, a CLI parser. A checkbox list is not a correctness
+   surface: the render is `write()` of strings the code composes.
+2. **Determinism.** A pure `renderList(state, options)` returns a string with no
+   clock, no terminal query, and no cursor addressing beyond colour and reverse
+   video, so the same state renders the same bytes and a test can pin it.
+   Component-tree renderers put layout in the framework's hands, which is exactly
+   the part a test cannot see.
+3. **Testability of the logic.** Filtering, selection, scroll-window maths, key
+   mapping, and sanitization are unit-tested without a TTY; the raw-mode driver
+   stays small enough that its only untested claim is "the terminal is restored".
+   `scripts/lib/selection.mjs` set this precedent for the numbered menus, and it
+   is still the module the installer's prompts use.
+
+**Cost.** Arrow-key and backspace sequences are mapped by hand (`lib/tui/keys.mjs`)
+instead of arriving decoded, and there is no widget library to grow into. Both
+are bounded: the sequences a terminal sends for a list UI are a table of six.
+
+**Exit path.** Revisit if the TUI needs a widget with real layout or input
+semantics — text editing, multi-column panes, mouse — where hand-written frame
+maths stops being cheaper than a dependency. A checkbox list is not that widget.

@@ -179,6 +179,12 @@ const EXECUTED_BY_TEST = [
         covers: ['npx|install|--harness,--rules,--scope'],
     },
     {
+        // A custom destination needs no --scope, and writes
+        // <dest>/<harness>/<integrationPath>.
+        argv: ['install', '--harness', 'copilot', '--dest', 'vendor-rules'],
+        covers: ['npx|install|--dest,--harness'],
+    },
+    {
         argv: ['install', '--dry-run', '--harness', 'cursor', '--scope', 'project'],
         covers: ['node|install|--dry-run,--harness,--scope'],
     },
@@ -284,6 +290,10 @@ const DECLARED = [
     {
         matches: /^npx\|agency-rules@/,
         reason: 'verifies the published tarball rather than this checkout; it cannot run before the release it verifies exists',
+    },
+    {
+        signature: 'npx|tui|',
+        reason: 'the TUI reads raw-mode keypresses and needs a TTY, which `node --test` does not have; its pure filter/state/render/keys/sanitize logic is unit-tested in `tests/tui-*.test.mjs`, and the install path it drives is executed by the `install --dest` entry above',
     },
 ];
 
@@ -463,5 +473,9 @@ test('every command in the ledger runs as documented', async () => {
     assert.ok(
         await exists(join(cwd, '.cursor', 'rules', 'go.mdc')),
         'the documented multi-rule install wrote nothing',
+    );
+    assert.ok(
+        await exists(join(cwd, 'vendor-rules', 'copilot', 'typescript.instructions.md')),
+        'the documented --dest install wrote nothing under the directory it was given',
     );
 });

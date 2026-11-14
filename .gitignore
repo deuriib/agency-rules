@@ -189,3 +189,7 @@ integrations/*/
 # OpenCode config already registers plugins. It names a plugin for the machine
 # that ran the install, so it is not source. Delete the leading slash to commit it.
 opencode.json
+
+# Run ledger written by the orchestration runs (project-tasks/), not shipped
+# source: it records what each run did, not what the package contains.
+project-tasks/
